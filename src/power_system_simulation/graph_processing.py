@@ -15,7 +15,7 @@ class GraphProcessor:
     A class for processing undirected graphs with support for edge disabling and analysis.
     """
 
-    def _init_(
+    def __init__(
         self,
         vertex_ids: List[int],
         edge_ids: List[int],
