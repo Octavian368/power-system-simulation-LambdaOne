@@ -1,14 +1,16 @@
+import networkx as nx
 import pytest
+
 from power_system_simulation.graph_processing import (
+    EdgeAlreadyDisabledError,
+    GraphCycleError,
+    GraphNotFullyConnectedError,
     GraphProcessor,
     IDNotFoundError,
-    InputLengthDoesNotMatchError,
     IDNotUniqueError,
-    GraphNotFullyConnectedError,
-    GraphCycleError,
-    EdgeAlreadyDisabledError,
+    InputLengthDoesNotMatchError,
 )
-import networkx as nx
+
 
 def test_initialization_and_validation():
     with pytest.raises(ValueError):

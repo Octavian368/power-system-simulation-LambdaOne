@@ -1,5 +1,7 @@
-import networkx as nx
 from typing import List, Tuple
+
+import networkx as nx
+
 
 class IDNotFoundError(Exception): pass
 class InputLengthDoesNotMatchError(Exception): pass
