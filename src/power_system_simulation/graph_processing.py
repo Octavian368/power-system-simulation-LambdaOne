@@ -3,12 +3,29 @@ from typing import List, Tuple
 import networkx as nx
 
 
-class IDNotFoundError(Exception): pass
-class InputLengthDoesNotMatchError(Exception): pass
-class IDNotUniqueError(Exception): pass
-class GraphNotFullyConnectedError(Exception): pass
-class GraphCycleError(Exception): pass
-class EdgeAlreadyDisabledError(Exception): pass
+class IDNotFoundError(Exception):
+    pass
+
+
+class InputLengthDoesNotMatchError(Exception):
+    pass
+
+
+class IDNotUniqueError(Exception):
+    pass
+
+
+class GraphNotFullyConnectedError(Exception):
+    pass
+
+
+class GraphCycleError(Exception):
+    pass
+
+
+class EdgeAlreadyDisabledError(Exception):
+    pass
+
 
 class GraphProcessor:
     """
@@ -82,7 +99,9 @@ class GraphProcessor:
 
         G_temp.remove_edge(u, v)
         components = list(nx.connected_components(G_temp))
-        downstream_component = next((comp for comp in components if self.source_vertex_id not in comp and (u in comp or v in comp)), None)
+        downstream_component = next(
+            (comp for comp in components if self.source_vertex_id not in comp and (u in comp or v in comp)), None
+        )
 
         return list(downstream_component) if downstream_component else []
 

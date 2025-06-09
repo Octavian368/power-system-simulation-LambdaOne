@@ -14,16 +14,18 @@ from power_grid_model.utils import get_element_ids_from_grid_data
 class ValidationException(Exception):
     pass
 
+
 class BatchResult:
     pass
+
 
 class PowerGridCalculator:
     def __init__(self, pgm_input_data: dict):
         self._pgm_grid = None
         self._initialize_pgm(pgm_input_data)
-        self._base_power_mva = pgm_input_data.get('base_power_mva', 1.0)
-        if 'base_power' in pgm_input_data:
-            self._base_power_mva = pgm_input_data['base_power'] / 1e6
+        self._base_power_mva = pgm_input_data.get("base_power_mva", 1.0)
+        if "base_power" in pgm_input_data:
+            self._base_power_mva = pgm_input_data["base_power"] / 1e6
         print(f"Initialized PowerGridCalculator with base power: {self._base_power_mva} MVA")
 
     def _initialize_pgm(self, pgm_input_data: dict):
@@ -33,19 +35,25 @@ class PowerGridCalculator:
             print(f"Error initializing PGM grid: {e}")
             raise
 
-    def create_batch_update_dataset(self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame) -> BatchUpdateDataset:
-        if 'timestamp' in active_load_profile.columns:
-            active_load_profile['timestamp'] = pd.to_datetime(active_load_profile['timestamp'])
-            active_load_profile = active_load_profile.set_index('timestamp')
-        if 'timestamp' in reactive_load_profile.columns:
-            reactive_load_profile['timestamp'] = pd.to_datetime(reactive_load_profile['timestamp'])
-            reactive_load_profile = reactive_load_profile.set_index('timestamp')
+    def create_batch_update_dataset(
+        self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame
+    ) -> BatchUpdateDataset:
+        if "timestamp" in active_load_profile.columns:
+            active_load_profile["timestamp"] = pd.to_datetime(active_load_profile["timestamp"])
+            active_load_profile = active_load_profile.set_index("timestamp")
+        if "timestamp" in reactive_load_profile.columns:
+            reactive_load_profile["timestamp"] = pd.to_datetime(reactive_load_profile["timestamp"])
+            reactive_load_profile = reactive_load_profile.set_index("timestamp")
 
         if not active_load_profile.index.equals(reactive_load_profile.index):
             raise ValueError("Active and reactive load profiles do not have matching timestamps.")
 
-        p_profile_pivot = active_load_profile.pivot_table(index=active_load_profile.index, columns='load_id', values='value')
-        q_profile_pivot = reactive_load_profile.pivot_table(index=reactive_load_profile.index, columns='load_id', values='value')
+        p_profile_pivot = active_load_profile.pivot_table(
+            index=active_load_profile.index, columns="load_id", values="value"
+        )
+        q_profile_pivot = reactive_load_profile.pivot_table(
+            index=reactive_load_profile.index, columns="load_id", values="value"
+        )
 
         if not p_profile_pivot.columns.equals(q_profile_pivot.columns):
             raise ValueError("Active and reactive load profiles do not have matching load IDs.")
@@ -87,13 +95,15 @@ class PowerGridCalculator:
             min_pu_voltage = np.min(u_pu_values)
             max_voltage_node_id = node_ids[np.argmax(u_pu_values)]
             min_voltage_node_id = node_ids[np.argmin(u_pu_values)]
-            summary_data.append({
-                "timestamp": pd.to_datetime(timestamp_str),
-                "max_pu_voltage": max_pu_voltage,
-                "max_voltage_node_id": max_voltage_node_id,
-                "min_pu_voltage": min_pu_voltage,
-                "min_voltage_node_id": min_voltage_node_id,
-            })
+            summary_data.append(
+                {
+                    "timestamp": pd.to_datetime(timestamp_str),
+                    "max_pu_voltage": max_pu_voltage,
+                    "max_voltage_node_id": max_voltage_node_id,
+                    "min_pu_voltage": min_pu_voltage,
+                    "min_voltage_node_id": min_voltage_node_id,
+                }
+            )
         summary_df = pd.DataFrame(summary_data).set_index("timestamp")
         return summary_df
 
@@ -105,12 +115,18 @@ class PowerGridCalculator:
             all_line_ids.update(ts_data.keys())
         timestamps = sorted([pd.to_datetime(ts) for ts in line_losses_pu.keys()])
         if not timestamps:
-            return pd.DataFrame(columns=[
-                'energy_loss_kwh', 'max_loading_pu', 'max_loading_timestamp',
-                'min_loading_pu', 'min_loading_timestamp'
-            ])
-        time_intervals_hours = [(timestamps[i] - timestamps[i-1]).total_seconds() / 3600
-                                for i in range(1, len(timestamps))]
+            return pd.DataFrame(
+                columns=[
+                    "energy_loss_kwh",
+                    "max_loading_pu",
+                    "max_loading_timestamp",
+                    "min_loading_pu",
+                    "min_loading_timestamp",
+                ]
+            )
+        time_intervals_hours = [
+            (timestamps[i] - timestamps[i - 1]).total_seconds() / 3600 for i in range(1, len(timestamps))
+        ]
         summary_data = []
         for line_id in sorted(list(all_line_ids)):
             losses_for_line = []
@@ -135,23 +151,26 @@ class PowerGridCalculator:
                 min_loading_pu = np.nan
                 max_loading_timestamp = pd.NaT
                 min_loading_timestamp = pd.NaT
-            summary_data.append({
-                "line_id": line_id,
-                "energy_loss_kwh": energy_loss_kwh,
-                "max_loading_pu": max_loading_pu,
-                "max_loading_timestamp": max_loading_timestamp,
-                "min_loading_pu": min_loading_pu,
-                "min_loading_timestamp": min_loading_timestamp,
-            })
+            summary_data.append(
+                {
+                    "line_id": line_id,
+                    "energy_loss_kwh": energy_loss_kwh,
+                    "max_loading_pu": max_loading_pu,
+                    "max_loading_timestamp": max_loading_timestamp,
+                    "min_loading_pu": min_loading_pu,
+                    "min_loading_timestamp": min_loading_timestamp,
+                }
+            )
         summary_df = pd.DataFrame(summary_data).set_index("line_id")
         return summary_df
+
 
 def trapezoidal_integral(y_values: list[float], x_values: list[pd.Timestamp]) -> float:
     if len(y_values) < 2 or len(x_values) < 2:
         return 0.0
     integral = 0.0
     for i in range(len(y_values) - 1):
-        delta_x_hours = (x_values[i+1] - x_values[i]).total_seconds() / 3600.0
-        sum_y = y_values[i] + y_values[i+1]
+        delta_x_hours = (x_values[i + 1] - x_values[i]).total_seconds() / 3600.0
+        sum_y = y_values[i] + y_values[i + 1]
         integral += 0.5 * sum_y * delta_x_hours
     return integral
