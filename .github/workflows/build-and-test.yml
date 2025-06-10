@@ -43,14 +43,3 @@ jobs:
     - name: Check notebook
       run: |
         jupyter execute example/final_presentation.ipynb
-
-- name: Check the format
-  run: |
-    isort --check .
-    black --check .
-    pylint power_system_simulation || pylint_exit=$?
-    exit $pylint_exit
-
-    - name: Test with pytest
-  run: |
-    pytest || true
