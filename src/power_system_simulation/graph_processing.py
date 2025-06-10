@@ -4,32 +4,47 @@ import networkx as nx
 
 
 class IDNotFoundError(Exception):
+    """Raised when a requested vertex or edge ID does not exist."""
+
     pass
 
 
 class InputLengthDoesNotMatchError(Exception):
+    """Raised when input lists have mismatched lengths."""
+
     pass
 
 
 class IDNotUniqueError(Exception):
+    """Raised when duplicate IDs are detected in the input."""
+
     pass
 
 
 class GraphNotFullyConnectedError(Exception):
+    """Raised when the initialized graph is not fully connected."""
+
     pass
 
 
 class GraphCycleError(Exception):
+    """Raised when the initialized graph contains cycles."""
+
     pass
 
 
 class EdgeAlreadyDisabledError(Exception):
+    """Raised when attempting to disable an already disabled edge."""
+
     pass
 
 
 class GraphProcessor:
     """
-    A class for processing undirected graphs with support for edge disabling and analysis.
+    Processes undirected graphs with edge disabling and analysis features.
+
+    Allows disabling/enabling of edges, querying downstream components,
+    and finding alternative edges to restore connectivity.
     """
 
     def __init__(
@@ -40,6 +55,24 @@ class GraphProcessor:
         edge_enabled: List[bool],
         source_vertex_id: int,
     ) -> None:
+        """
+        Initialize the GraphProcessor.
+
+        Args:
+            vertex_ids: List of unique vertex IDs.
+            edge_ids: List of unique edge IDs.
+            edge_vertex_id_pairs: List of (u, v) pairs for each edge.
+            edge_enabled: List of booleans for enabled state of each edge.
+            source_vertex_id: The source vertex ID.
+
+        Raises:
+            ValueError: If any required list is empty.
+            IDNotUniqueError: If IDs are not unique.
+            InputLengthDoesNotMatchError: If edge lists do not match in length.
+            IDNotFoundError: If a referenced vertex is missing.
+            GraphNotFullyConnectedError: If the graph is not fully connected.
+            GraphCycleError: If the graph contains cycles.
+        """
         if not vertex_ids or not edge_ids:
             raise ValueError("Vertex and edge lists cannot be empty.")
 
@@ -75,30 +108,56 @@ class GraphProcessor:
             raise GraphCycleError("The graph contains cycles.")
 
     def _build_graph(self) -> nx.Graph:
-        """Helper to build the graph from current edge states."""
-        G = nx.Graph()
-        G.add_nodes_from(self.vertex_ids)
-        for eid, (u, v), enabled in zip(self.edge_ids, self.edge_vertex_id_pairs, self.edge_enabled):
+        """
+        Build a NetworkX graph using only currently enabled edges.
+
+        Returns:
+            nx.Graph: The built graph.
+        """
+        graph = nx.Graph()
+        graph.add_nodes_from(self.vertex_ids)
+        for edge_id, (u, v), enabled in zip(self.edge_ids, self.edge_vertex_id_pairs, self.edge_enabled):
             if enabled:
-                G.add_edge(u, v, edge_id=eid)
-        return G
+                graph.add_edge(u, v, edge_id=edge_id)
+        return graph
 
     def _get_edge_vertices(self, edge_id: int) -> Tuple[int, int]:
+        """
+        Get the (u, v) vertex tuple for a given edge ID.
+
+        Args:
+            edge_id: The edge ID.
+
+        Returns:
+            Tuple[int, int]: The (u, v) tuple for this edge.
+
+        Raises:
+            IDNotFoundError: If edge ID not found.
+        """
         if edge_id not in self.edge_id_to_index:
             raise IDNotFoundError(f"Edge ID {edge_id} not found.")
         return self.edge_vertex_id_pairs[self.edge_id_to_index[edge_id]]
 
     def find_downstream_vertices(self, edge_id: int) -> List[int]:
+        """
+        Find all vertices that would become disconnected from the source if edge_id is removed.
+
+        Args:
+            edge_id: The edge ID.
+
+        Returns:
+            List[int]: List of downstream vertex IDs (may be empty).
+        """
         u, v = self._get_edge_vertices(edge_id)
         if not self.edge_enabled[self.edge_id_to_index[edge_id]]:
             return []
 
-        G_temp = self.graph.copy()
-        if not G_temp.has_edge(u, v):
-            return []  # Edge already absent
+        temp_graph = self.graph.copy()
+        if not temp_graph.has_edge(u, v):
+            return []
 
-        G_temp.remove_edge(u, v)
-        components = list(nx.connected_components(G_temp))
+        temp_graph.remove_edge(u, v)
+        components = list(nx.connected_components(temp_graph))
         downstream_component = next(
             (comp for comp in components if self.source_vertex_id not in comp and (u in comp or v in comp)), None
         )
@@ -106,39 +165,76 @@ class GraphProcessor:
         return list(downstream_component) if downstream_component else []
 
     def find_downstream_subgraph(self, edge_id: int) -> nx.Graph:
+        """
+        Return the subgraph induced by downstream vertices if edge_id is removed.
+
+        Args:
+            edge_id: The edge ID.
+
+        Returns:
+            nx.Graph: The subgraph (may be empty).
+        """
         downstream_vertices = self.find_downstream_vertices(edge_id)
         return self.graph.subgraph(downstream_vertices).copy() if downstream_vertices else nx.Graph()
 
     def find_alternative_edges(self, disabled_edge_id: int) -> List[int]:
+        """
+        Suggest disabled edges whose re-enabling would reconnect the graph (as a forest).
+
+        Args:
+            disabled_edge_id: The ID of the edge being disabled.
+
+        Returns:
+            List[int]: Sorted list of alternative edge IDs.
+
+        Raises:
+            EdgeAlreadyDisabledError: If the given edge is already disabled.
+        """
         u, v = self._get_edge_vertices(disabled_edge_id)
         if not self.edge_enabled[self.edge_id_to_index[disabled_edge_id]]:
             raise EdgeAlreadyDisabledError(f"Edge ID {disabled_edge_id} is already disabled.")
 
-        G_temp = self.graph.copy()
-        G_temp.remove_edge(u, v)
+        temp_graph = self.graph.copy()
+        temp_graph.remove_edge(u, v)
 
-        if nx.is_connected(G_temp):
+        if nx.is_connected(temp_graph):
             return []
 
-        # Look for alternative disabled edges that reconnect the graph and keep it a forest
         alternatives = []
-        for idx, (eid, (a, b)) in enumerate(zip(self.edge_ids, self.edge_vertex_id_pairs)):
+        for idx, (edge_id, (a, b)) in enumerate(zip(self.edge_ids, self.edge_vertex_id_pairs)):
             if not self.edge_enabled[idx]:
-                G_check = G_temp.copy()
-                G_check.add_edge(a, b, edge_id=eid)
-                if nx.is_connected(G_check) and nx.is_forest(G_check):
-                    alternatives.append(eid)
+                check_graph = temp_graph.copy()
+                check_graph.add_edge(a, b, edge_id=edge_id)
+                if nx.is_connected(check_graph) and nx.is_forest(check_graph):
+                    alternatives.append(edge_id)
 
         return sorted(alternatives)
 
-    # Optional: add dynamic enabling/disabling methods for extra flexibility
-    def enable_edge(self, edge_id: int):
+    def enable_edge(self, edge_id: int) -> None:
+        """
+        Enable a given edge by edge ID.
+
+        Args:
+            edge_id: The edge ID to enable.
+
+        Raises:
+            IDNotFoundError: If the edge ID is not found.
+        """
         if edge_id not in self.edge_id_to_index:
             raise IDNotFoundError(f"Edge ID {edge_id} not found.")
         self.edge_enabled[self.edge_id_to_index[edge_id]] = True
         self.graph = self._build_graph()
 
-    def disable_edge(self, edge_id: int):
+    def disable_edge(self, edge_id: int) -> None:
+        """
+        Disable a given edge by edge ID.
+
+        Args:
+            edge_id: The edge ID to disable.
+
+        Raises:
+            IDNotFoundError: If the edge ID is not found.
+        """
         if edge_id not in self.edge_id_to_index:
             raise IDNotFoundError(f"Edge ID {edge_id} not found.")
         self.edge_enabled[self.edge_id_to_index[edge_id]] = False
