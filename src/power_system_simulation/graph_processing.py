@@ -7,7 +7,9 @@ and alternative edge suggestions.
 """
 
 from typing import List, Tuple
+
 import networkx as nx
+
 
 class IDNotFoundError(Exception):
     """Raised when a requested vertex or edge ID does not exist."""
