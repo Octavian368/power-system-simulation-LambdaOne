@@ -14,20 +14,26 @@ import networkx as nx
 class IDNotFoundError(Exception):
     """Raised when a requested vertex or edge ID does not exist."""
 
+
 class InputLengthDoesNotMatchError(Exception):
     """Raised when input lists have mismatched lengths."""
+
 
 class IDNotUniqueError(Exception):
     """Raised when duplicate IDs are detected in the input."""
 
+
 class GraphNotFullyConnectedError(Exception):
     """Raised when the initialized graph is not fully connected."""
+
 
 class GraphCycleError(Exception):
     """Raised when the initialized graph contains cycles."""
 
+
 class EdgeAlreadyDisabledError(Exception):
     """Raised when attempting to disable an already disabled edge."""
+
 
 class GraphProcessor:
     """
