@@ -36,6 +36,7 @@ example = [
 [tool.pylint."DESIGN"]
 max-attributes = 8
 max-args = 6
+max-positional-arguments=6
 
 [tool.setuptools.packages.find]
 where = ["src"] 
