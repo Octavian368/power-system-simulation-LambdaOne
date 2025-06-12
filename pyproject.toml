@@ -24,7 +24,8 @@ dev = [
   'isort',
   'pylint',
   'pytest-cov',
-  'networkx'
+  'networkx',
+  'black[jupyter]'
 ]
 
 # add more dependencies for running the examples
