@@ -33,6 +33,10 @@ example = [
   'jupyter'
 ]
 
+[tool.pylint."DESIGN"]
+max-attributes = 8
+max-args = 6
+
 [tool.setuptools.packages.find]
 where = ["src"] 
 namespaces = false 
