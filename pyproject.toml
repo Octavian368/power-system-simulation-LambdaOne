@@ -23,7 +23,8 @@ dev = [
   'black',
   'isort',
   'pylint',
-  'pytest-cov'
+  'pytest-cov',
+  'networkx'
 ]
 
 # add more dependencies for running the examples
