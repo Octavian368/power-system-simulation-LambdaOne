@@ -14,7 +14,7 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 # add dependencies of your core package, check the license first!
-dependencies = ["networkx"]
+dependencies = []
 version = "0.1"
 
 [project.optional-dependencies]
@@ -23,13 +23,21 @@ dev = [
   'black',
   'isort',
   'pylint',
-  'pytest-cov'
+  'pytest-cov',
+  'networkx',
+  'black[jupyter]',
+  'power_grid_model'
 ]
 
 # add more dependencies for running the examples
 example = [
   'jupyter'
 ]
+
+[tool.pylint."DESIGN"]
+max-attributes = 8
+max-args = 6
+max-positional-arguments=6
 
 [tool.setuptools.packages.find]
 where = ["src"] 
@@ -55,4 +63,4 @@ max-line-length = 120
 
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.
-py-version = "3.12"
+py-versionv = "3.12"

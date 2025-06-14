@@ -1,3 +1,7 @@
+"""
+test file
+"""
+
 import networkx as nx
 import pytest
 
@@ -13,6 +17,9 @@ from power_system_simulation.graph_processing import (
 
 
 def test_initialization_and_validation():
+    """
+    test initialization and validation
+    """
     with pytest.raises(ValueError):
         GraphProcessor([], [], [], [], 0)
     with pytest.raises(IDNotUniqueError):
@@ -28,6 +35,9 @@ def test_initialization_and_validation():
 
 
 def test_find_downstream_vertices_and_subgraph():
+    """
+    test find downstream vertices and subgraph
+    """
     gp = GraphProcessor([1, 2, 3], [10, 20], [(1, 2), (2, 3)], [True, True], 1)
     downstream = gp.find_downstream_vertices(20)
     assert set(downstream) == {3}
@@ -36,6 +46,9 @@ def test_find_downstream_vertices_and_subgraph():
 
 
 def test_find_alternative_edges():
+    """
+    test find alternative edges
+    """
     # Add backup edge 1-3 to act as alternative when 20 is disabled
     gp = GraphProcessor([1, 2, 3], [10, 20, 30], [(1, 2), (2, 3), (1, 3)], [True, True, False], 1)
     alternatives = gp.find_alternative_edges(20)
@@ -43,6 +56,9 @@ def test_find_alternative_edges():
 
 
 def test_edge_already_disabled_error():
+    """
+    test edge already disabled
+    """
     gp = GraphProcessor([1, 2], [10], [(1, 2)], [True], 1)
     gp.disable_edge(10)
     with pytest.raises(EdgeAlreadyDisabledError):
@@ -50,6 +66,9 @@ def test_edge_already_disabled_error():
 
 
 def test_enable_disable_edge():
+    """
+    test enable/disable edge
+    """
     gp = GraphProcessor([1, 2, 3], [10, 20], [(1, 2), (2, 3)], [True, True], 1)
     gp.disable_edge(20)
     assert not gp.edge_enabled[1]
@@ -58,6 +77,9 @@ def test_enable_disable_edge():
 
 
 def test_find_downstream_vertices_edge_absent():
+    """
+    test find downstream vertices edge absent
+    """
     gp = GraphProcessor([1, 2], [10], [(1, 2)], [True], 1)
     gp.disable_edge(10)
     result = gp.find_downstream_vertices(10)
@@ -65,12 +87,18 @@ def test_find_downstream_vertices_edge_absent():
 
 
 def test_find_alternative_edges_when_connected():
+    """
+    test find alternative edges when connected
+    """
     gp = GraphProcessor([1, 2, 3], [10, 20], [(1, 2), (2, 3)], [True, True], 1)
     result = gp.find_alternative_edges(10)
     assert result == []
 
 
 def test_dynamic_disable_breaks_connectivity():
+    """
+    test dynamic disable breaks connectivity
+    """
     # Correct: let find_downstream_vertices handle disabling
     gp = GraphProcessor([1, 2, 3], [10, 20], [(1, 2), (2, 3)], [True, True], 1)
     downstream = gp.find_downstream_vertices(20)
@@ -78,6 +106,9 @@ def test_dynamic_disable_breaks_connectivity():
 
 
 def test_dynamic_enable_reconnects_graph():
+    """
+    test dynamic enable reconnects graph
+    """
     gp = GraphProcessor([1, 2, 3, 4], [10, 20, 30], [(1, 2), (2, 3), (3, 4)], [True, True, True], 1)
     gp.disable_edge(20)
     assert not nx.is_connected(gp.graph)
@@ -86,6 +117,9 @@ def test_dynamic_enable_reconnects_graph():
 
 
 def test_invalid_edge_id():
+    """
+    test invalid edge id
+    """
     gp = GraphProcessor([1, 2], [10], [(1, 2)], [True], 1)
     with pytest.raises(IDNotFoundError):
         gp.find_downstream_vertices(999)
