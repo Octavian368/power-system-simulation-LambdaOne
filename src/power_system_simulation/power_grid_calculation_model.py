@@ -38,11 +38,12 @@ def _convert_to_columnar_format(data: dict) -> dict:
     int8_fields = {"status", "from_status", "to_status", "type"}
 
     for component, entries in data.items():
-        if not entries:
+        # Check if entries is empty or None
+        if entries is None or (isinstance(entries, np.ndarray) and entries.size == 0):
             columnar_data[component] = {}
             continue
 
-        # Handle structured numpy array from deserialization
+        # Structured NumPy array from deserialization
         if isinstance(entries, np.ndarray) and entries.dtype.names:
             columnar_data[component] = {
                 key: entries[key].astype(
@@ -52,7 +53,7 @@ def _convert_to_columnar_format(data: dict) -> dict:
             }
             continue
 
-        # Handle list-of-dict entries
+        # Fallback for list-of-dict
         field_map = defaultdict(list)
         for entry in entries:
             for k, v in entry.items():
