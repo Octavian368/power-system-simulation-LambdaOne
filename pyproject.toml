@@ -53,7 +53,8 @@ line-length = 100  # Adjusted for better readability
 [tool.isort]
 profile = "black"
 combine_as_imports = true
-line-length = 100  # Adjusted for better readability
+line_length = 100  # Correct line length configuration
+known_third_party = ["pandas", "pytest", "black", "pylint"]
 
 [tool.pylint.main]
 fail-under = 10
