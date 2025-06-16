@@ -1,10 +1,9 @@
+import json
 import pandas as pd
 import numpy as np
-import json
 from typing import Dict, List
 from datetime import datetime
 from collections import defaultdict
-from pathlib import Path
 
 from power_grid_model import (
     PowerGridModel,
@@ -40,12 +39,14 @@ def _convert_to_columnar_format(data: dict) -> dict:
         converted = {}
         for key, value in field_map.items():
             arr = np.array(value)
+
             if key in int32_fields:
                 arr = arr.astype(np.int32)
             elif key in int8_fields:
                 arr = arr.astype(np.int8)
             elif arr.dtype.kind in {"i", "f"}:
                 arr = arr.astype(np.float64)
+
             converted[key] = arr
 
         columnar_data[component] = converted
@@ -69,32 +70,56 @@ class PowerGridCalculator:
         self.model = PowerGridModel(columnar_data)
         self.input_data = columnar_data
 
-    def create_batch_update_dataset(self, active_df: pd.DataFrame, reactive_df: pd.DataFrame) -> Dict:
-        # Fix for when Timestamp and load_id are in index or columns with wrong capitalization
-        active_df = active_df.rename(columns=str.lower).reset_index()
-        reactive_df = reactive_df.rename(columns=str.lower).reset_index()
+    def create_batch_update(self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame) -> Dict:
+        # Melt to long format
+        active_df = active_load_profile.reset_index().melt(id_vars=["Timestamp"], var_name="load_id", value_name="value")
+        reactive_df = reactive_load_profile.reset_index().melt(id_vars=["Timestamp"], var_name="load_id", value_name="value")
 
-        if 'timestamp' not in active_df.columns or 'load_id' not in active_df.columns:
-            raise ValueError(f"Expected 'timestamp' and 'load_id' in active_df, got columns: {list(active_df.columns)}")
-        if 'timestamp' not in reactive_df.columns or 'load_id' not in reactive_df.columns:
-            raise ValueError(f"Expected 'timestamp' and 'load_id' in reactive_df, got columns: {list(reactive_df.columns)}")
+        # Normalize timestamp column names
+        active_df.rename(columns={"Timestamp": "timestamp"}, inplace=True)
+        reactive_df.rename(columns={"Timestamp": "timestamp"}, inplace=True)
+
+        # Normalize timestamp column names
+        timestamp_cols = [col for col in active_df.columns if str(col).lower() == 'timestamp']
+        if timestamp_cols:
+            active_df.rename(columns={timestamp_cols[0]: 'timestamp'}, inplace=True)
+        else:
+            raise KeyError("No 'timestamp' column found in active_df.")
+
+        timestamp_cols = [col for col in reactive_df.columns if str(col).lower() == 'timestamp']
+        if timestamp_cols:
+            reactive_df.rename(columns={timestamp_cols[0]: 'timestamp'}, inplace=True)
+        else:
+            raise KeyError("No 'timestamp' column found in reactive_df.")
+
+        if not active_df['timestamp'].equals(reactive_df['timestamp']):
+            raise ValueError("Timestamps in active and reactive profiles do not match.")
+
+        if 'load_id' not in active_df.columns or 'load_id' not in reactive_df.columns:
+            raise ValueError("Missing 'load_id' column in input DataFrames.")
+
+        if not active_df['load_id'].equals(reactive_df['load_id']):
+            raise ValueError("Load IDs in active and reactive profiles don't match.")
 
         timestamps = active_df['timestamp'].unique()
         load_ids = active_df['load_id'].unique()
 
-
-        update = initialize_array(
-            DatasetType.update, ComponentType.sym_load, (len(timestamps), len(load_ids))
+        sym_load_update = initialize_array(
+            DatasetType.update,
+            ComponentType.sym_load,
+            (len(timestamps), len(load_ids))
         )
-        update['id'] = load_ids
 
-        for i, t in enumerate(timestamps):
-            active_vals = active_df[active_df['timestamp'] == t].sort_values('load_id')['value'].values
-            reactive_vals = reactive_df[reactive_df['timestamp'] == t].sort_values('load_id')['value'].values
-            update['p_specified'][i] = active_vals
-            update['q_specified'][i] = reactive_vals
+        sym_load_update['id'] = load_ids
 
-        return {ComponentType.sym_load: update}
+        for i, ts in enumerate(timestamps):
+            ts_active = active_df[active_df['timestamp'] == ts].sort_values('load_id')
+            ts_reactive = reactive_df[reactive_df['timestamp'] == ts].sort_values('load_id')
+
+            sym_load_update['p_specified'][i] = ts_active['value'].values
+            sym_load_update['q_specified'][i] = ts_reactive['value'].values
+
+        return {ComponentType.sym_load: sym_load_update}
 
     def run_time_series_power_flow(self, update_data: Dict, symmetric=True,
                                    calculation_method=CalculationMethod.newton_raphson,
@@ -122,9 +147,10 @@ class PowerGridCalculator:
         node_results = results[ComponentType.node]
         voltage_data = []
 
-        for i, scenario in enumerate(node_results):
+        for scenario in node_results:
             u_pu = scenario['u_pu']
             node_ids = scenario['id']
+
             max_idx = np.argmax(u_pu)
             min_idx = np.argmin(u_pu)
 
@@ -148,10 +174,12 @@ class PowerGridCalculator:
 
         for i, scenario in enumerate(line_results):
             all_loadings[i] = scenario['loading']
-            all_losses[i] = (scenario['p_from'] + scenario['p_to']) * 1e-3  # convert to kW
+            p_from = scenario['p_from']
+            p_to = scenario['p_to']
+            all_losses[i] = (p_from + p_to) * 1e-3  # in kW
 
         energy_losses = []
-        time_deltas = [(timestamps[i+1] - timestamps[i]).total_seconds() / 3600 for i in range(len(timestamps) - 1)]
+        time_deltas = [(timestamps[i+1] - timestamps[i]).total_seconds() / 3600 for i in range(len(timestamps)-1)]
 
         for line_idx in range(n_lines):
             losses_kw = all_losses[:, line_idx]
@@ -163,6 +191,7 @@ class PowerGridCalculator:
 
         max_loadings = np.max(all_loadings, axis=0)
         min_loadings = np.min(all_loadings, axis=0)
+
         max_timestamps = [timestamps[np.argmax(all_loadings[:, i])] for i in range(n_lines)]
         min_timestamps = [timestamps[np.argmin(all_loadings[:, i])] for i in range(n_lines)]
 
@@ -185,11 +214,3 @@ class PowerGridCalculator:
             raise ValueError(f"File not found: {json_path}")
         except json.JSONDecodeError:
             raise ValueError(f"Invalid JSON in file: {json_path}")
-
-
-def trapezoidal_integral(y_values: List[float], x_values: List[datetime]) -> float:
-    integral = 0.0
-    for i in range(len(y_values) - 1):
-        delta_hours = (x_values[i+1] - x_values[i]).total_seconds() / 3600
-        integral += 0.5 * (y_values[i] + y_values[i+1]) * delta_hours
-    return integral
