@@ -14,7 +14,9 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 # add dependencies of your core package, check the license first!
-dependencies = []
+dependencies = [
+  "power_grid_model"
+]
 version = "0.1"
 
 [project.optional-dependencies]
