@@ -9,7 +9,9 @@ from power_system_simulation.power_grid_calculation_model import (
     LoadIdsDoNotMatchError,
 )
 from power_grid_model.validation import ValidationException
+from pathlib import Path
 
+INPUT_DIR = Path(__file__).parent.parent / "input"
 
 def sample_input_data():
     return {
@@ -42,7 +44,6 @@ def sample_input_data():
         }
     }
 
-
 def test_valid_create_batch_update():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
@@ -57,19 +58,15 @@ def test_valid_create_batch_update():
     assert 100 in update['sym_load']['id']
     assert update['sym_load']['p_specified'].shape == (3, 1)
 
-
 def test_mismatched_timestamps():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
 
-    df1 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-01", periods=2, freq="h"))
-    df1.index.name = "Timestamp"
-    df2 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-02", periods=2, freq="h"))
-    df2.index.name = "Timestamp"
+    df1 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-01", periods=2, freq="h", name="Timestamp"))
+    df2 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-02", periods=2, freq="h", name="Timestamp"))
 
     with pytest.raises(TimestampMismatchError):
         calc.create_batch_update(df1, df2)
-
 
 def test_mismatched_columns():
     data = sample_input_data()
@@ -82,7 +79,6 @@ def test_mismatched_columns():
     with pytest.raises(LoadIdsDoNotMatchError):
         calc.create_batch_update(df1, df2)
 
-
 def test_invalid_index_type():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
@@ -93,7 +89,6 @@ def test_invalid_index_type():
 
     with pytest.raises(ValueError, match="DatetimeIndex"):
         calc.create_batch_update(df1, df2)
-
 
 def test_missing_timestamp_column():
     data = sample_input_data()
@@ -106,7 +101,6 @@ def test_missing_timestamp_column():
     with pytest.raises(ValueError, match="DatetimeIndex"):
         calc.create_batch_update(df1, df2)
 
-
 def test_run_power_flow():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
@@ -117,7 +111,6 @@ def test_run_power_flow():
     update = calc.create_batch_update(df, df)
     results = calc.run_time_series_power_flow(update)
     assert 'node' in results
-
 
 def test_voltage_aggregation():
     data = sample_input_data()
@@ -131,7 +124,6 @@ def test_voltage_aggregation():
     voltage = calc.aggregate_voltage_results(results)
     assert "Max_Voltage" in voltage.columns
 
-
 def test_line_aggregation():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
@@ -144,7 +136,6 @@ def test_line_aggregation():
     df = calc.aggregate_line_results(results, list(ts))
     assert "Total_Loss" in df.columns
 
-
 def test_from_json_file_valid(tmp_path):
     json_data = sample_input_data()
     json_path = tmp_path / "input.json"
@@ -152,7 +143,6 @@ def test_from_json_file_valid(tmp_path):
 
     calc = PowerGridCalculator.from_json_file(str(json_path))
     assert isinstance(calc, PowerGridCalculator)
-
 
 def test_from_json_file_missing():
     with pytest.raises(ValueError, match="File not found"):
@@ -170,7 +160,6 @@ def test_convert_structured_array_direct():
     assert "id" in result["sym_load"]
     assert result["sym_load"]["p_specified"][0] == 1.0
 
-
 def test_from_json_file_invalid_json(tmp_path):
     bad_path = tmp_path / "bad.json"
     bad_path.write_text("not a json")
@@ -182,7 +171,6 @@ def test_run_power_flow_with_invalid_data():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
 
-    # This input will break buffer consistency, causing a ValueError directly
     bad_update = {
         "sym_load": {
             "id": np.array([999], dtype=np.int32),
@@ -195,7 +183,6 @@ def test_run_power_flow_with_invalid_data():
         calc.run_time_series_power_flow(bad_update)
 
 def test_invalid_input_data_triggers_validation_error():
-    # Missing required "node" field -> validation should fail
     bad_data = {
         "version": "1.0",
         "type": "input",
@@ -214,7 +201,6 @@ def test_invalid_input_data_triggers_validation_error():
                 "tan1": 0,
                 "i_n": 1000
             }]
-            # "node" key is intentionally missing
         }
     }
 
