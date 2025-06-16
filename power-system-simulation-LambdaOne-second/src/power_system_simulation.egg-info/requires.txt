@@ -1,0 +1,10 @@
+
+[dev]
+pytest
+black
+isort
+pylint
+pytest-cov
+
+[example]
+jupyter

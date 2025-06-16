@@ -1,0 +1,69 @@
+Metadata-Version: 2.4
+Name: power-system-simulation
+Version: 0.1
+Summary: Student project for power system simulation
+Author: TU/e EES group
+License: BSD License (BSD)
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: BSD License
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
+Requires-Dist: pylint; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Provides-Extra: example
+Requires-Dist: jupyter; extra == "example"
+Dynamic: license-file
+
+# power-system-simulation
+
+This is a student project for Power System Simulation.
+
+
+## Installation
+
+In a Python environment, in the root of the repository, install it in develop mode using the command below.
+
+**NOTE: you need to re-run the following command everytime you add new (optional) dependencies!**
+
+```shell
+pip install -e .[dev,example]
+```
+
+After installation, run the test.
+
+```shell
+pytest
+```
+
+## Code style and quality check
+
+You can run the following two commands to automatically format your code style.
+
+```shell
+isort .
+black .
+```
+
+You can run the following command to check the code quality.
+It will return errors if the quality check fails.
+You need to read the errors and make required adjustments.
+
+```shell
+pylint power_system_simulation 
+```
+
+## Folder structure of the repository
+
+The folder structure of the repository is explained as below.
+
+
+* [`src/power_system_simulation`](./src/power_system_simulation) is the main folder of the package. You should put your new functionality code there.
+* [`tests`](./tests) is the folder containing the test files. You should put your test code there.
+* [`example`](./example) contains the example notebook. You should modify the notebook for your presentation.
+* [`.vscode`](./.vscode) contains the setting file for the IDE VSCode.
+* [`.github/workflows`](./.github/workflows) contains the continuous integration (CI) configurations.
