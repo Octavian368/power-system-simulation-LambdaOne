@@ -25,6 +25,7 @@ dev = [
   'pylint',
   'pytest-cov',
   'networkx',
+<<<<<<< third
   'black[jupyter]',
   'power_grid_model'
 ]
