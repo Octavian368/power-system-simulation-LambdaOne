@@ -1,3 +1,8 @@
+"""
+This module provides the PowerGridCalculator class and utility functions for performing power grid calculations, including power flow, load updates, and voltage aggregation.
+It handles the processing of grid data and provides methods to calculate and aggregate power flow results.
+"""
+
 import json
 from collections import defaultdict
 from datetime import datetime
@@ -32,7 +37,15 @@ class LoadIdsDoNotMatchError(Exception):
 
 
 def _convert_to_columnar_format(data: dict) -> dict:
-    """Converts data to columnar format and adjusts types."""
+    """
+    Converts input data into columnar format for easier processing.
+
+    Args:
+        data (dict): The input data to be converted.
+
+    Returns:
+        dict: Columnar format of the input data.
+    """
     columnar_data = {}
     int32_fields = {"id", "from_node", "to_node", "node"}
     int8_fields = {"status", "from_status", "to_status", "type"}
@@ -76,10 +89,17 @@ def _convert_to_columnar_format(data: dict) -> dict:
 
 
 class PowerGridCalculator:
-    """Manages power grid calculations, including updates, power flow, and aggregation."""
+    """
+    Manages power grid calculations, including updates, power flow, and aggregation.
+    """
 
     def __init__(self, pgm_input_data: Dict):
-        """Initializes the calculator with input data."""
+        """
+        Initializes the PowerGridCalculator with input data.
+
+        Args:
+            pgm_input_data (Dict): Input data for power grid calculations.
+        """
         row_data = pgm_input_data.get("data", pgm_input_data)
         columnar_data = _convert_to_columnar_format(row_data)
 
@@ -95,7 +115,16 @@ class PowerGridCalculator:
         self.input_data = columnar_data
 
     def create_batch_update(self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame) -> Dict:
-        """Creates batch update for active and reactive profiles."""
+        """
+        Creates a batch update for active and reactive profiles.
+
+        Args:
+            active_load_profile (pd.DataFrame): DataFrame containing active load profile data.
+            reactive_load_profile (pd.DataFrame): DataFrame containing reactive load profile data.
+
+        Returns:
+            Dict: Batch update for active and reactive loads.
+        """
         if not isinstance(active_load_profile.index, pd.DatetimeIndex) or not isinstance(
             reactive_load_profile.index, pd.DatetimeIndex
         ):
@@ -146,7 +175,19 @@ class PowerGridCalculator:
         error_tolerance=1e-8,
         max_iterations=20,
     ) -> Dict:
-        """Runs the power flow calculation with the provided update data."""
+        """
+        Runs the power flow calculation with the provided update data.
+
+        Args:
+            update_data (Dict): The data to update the power grid model.
+            symmetric (bool, optional): Whether to use symmetric calculations. Defaults to True.
+            calculation_method (CalculationMethod, optional): The method for power flow calculations.
+            error_tolerance (float, optional): The error tolerance for calculations. Defaults to 1e-8.
+            max_iterations (int, optional): The maximum number of iterations. Defaults to 20.
+
+        Returns:
+            Dict: Results of the power flow calculation.
+        """
         try:
             return self.model.calculate_power_flow(
                 update_data=update_data,
@@ -167,7 +208,15 @@ class PowerGridCalculator:
             raise
 
     def aggregate_voltage_results(self, results: Dict) -> pd.DataFrame:
-        """Aggregates the voltage results from the power flow calculations."""
+        """
+        Aggregates the voltage results from the power flow calculations.
+
+        Args:
+            results (Dict): The results of the power flow calculation.
+
+        Returns:
+            pd.DataFrame: Aggregated voltage data.
+        """
         voltage_data = []
         for scenario in results[ComponentType.node]:
             u_pu = scenario["u_pu"]
@@ -183,7 +232,16 @@ class PowerGridCalculator:
         return pd.DataFrame(voltage_data)
 
     def aggregate_line_results(self, results: Dict, timestamps: List[datetime]) -> pd.DataFrame:
-        """Aggregates the line results from the power flow calculations."""
+        """
+        Aggregates the line results from the power flow calculations.
+
+        Args:
+            results (Dict): The results of the power flow calculations.
+            timestamps (List[datetime]): The list of timestamps for the calculations.
+
+        Returns:
+            pd.DataFrame: Aggregated line data.
+        """
         line_results = results[ComponentType.line]
         n_scenarios = len(line_results)
         n_lines = len(line_results[0]["id"])
@@ -224,7 +282,15 @@ class PowerGridCalculator:
 
     @classmethod
     def from_json_file(cls, json_path: str):
-        """Loads data from a JSON file and returns a PowerGridCalculator instance."""
+        """
+        Loads data from a JSON file and returns a PowerGridCalculator instance.
+
+        Args:
+            json_path (str): The path to the JSON file.
+
+        Returns:
+            PowerGridCalculator: A new instance of the calculator with the loaded data.
+        """
         try:
             with open(json_path, "r", encoding="utf-8") as f:
                 data = json_deserialize(f.read())
