@@ -165,6 +165,7 @@ class PowerGridCalculator:
         )
         sym_load_update["id"] = load_ids
 
+        # Updated loop with enumerate to fix the pylint issue
         for i, ts in enumerate(timestamps):
             ts_active = active_df[active_df["timestamp"] == ts].sort_values("load_id")
             ts_reactive = reactive_df[reactive_df["timestamp"] == ts].sort_values("load_id")
@@ -260,7 +261,7 @@ class PowerGridCalculator:
             all_loadings[i] = scenario["loading"]
             all_losses[i] = (scenario["p_from"] + scenario["p_to"]) * 1e-3
 
-        energy_losses = []
+        energy_losses = []  # Ensure energy_losses is initialized
         time_deltas = [
             (timestamps[i + 1] - timestamps[i]).total_seconds() / 3600
             for i in range(len(timestamps) - 1)
@@ -268,9 +269,11 @@ class PowerGridCalculator:
 
         for line_idx in range(n_lines):
             total_energy = 0.0
-            for i in range(len(time_deltas)):
+            for i, delta in enumerate(time_deltas):  # Use enumerate for time_deltas
                 avg_loss = (all_losses[i][line_idx] + all_losses[i + 1][line_idx]) / 2
-                total_energy += avg_loss * time_deltas[i]
+                total_energy += avg_loss * delta
+
+            # Append the calculated total energy for the current line to energy_losses
             energy_losses.append(total_energy)
 
         max_loadings = np.max(all_loadings, axis=0)
@@ -281,7 +284,7 @@ class PowerGridCalculator:
         return pd.DataFrame(
             {
                 "line_id": line_ids,
-                "Total_Loss": energy_losses,
+                "Total_Loss": energy_losses,  # Ensure total energy is included here
                 "Max_Loading": max_loadings,
                 "Max_Loading_Timestamp": max_timestamps,
                 "Min_Loading": min_loadings,
