@@ -81,7 +81,9 @@ Error = TypeVar("Error", bound=ValidationError)
 CompError = TypeVar("CompError", bound=ComparisonError)
 
 
-def all_greater_than_zero(data: SingleDataset, component: ComponentType, field: str) -> list[NotGreaterThanError]:
+def all_greater_than_zero(
+    data: SingleDataset, component: ComponentType, field: str
+) -> list[NotGreaterThanError]:
     """
     Check that for all records of a particular type of component, the values in the 'field' column are greater than
     zero. Returns an empty list on success, or a list containing a single error object on failure.
@@ -147,7 +149,9 @@ def all_greater_than(
     def not_greater(val: np.ndarray, *ref: np.ndarray):
         return np.less_equal(val, *ref)
 
-    return none_match_comparison(data, component, field, not_greater, ref_value, NotGreaterThanError)
+    return none_match_comparison(
+        data, component, field, not_greater, ref_value, NotGreaterThanError
+    )
 
 
 def all_greater_or_equal(
@@ -183,7 +187,13 @@ def all_greater_or_equal(
         return np.less(val, *ref)
 
     return none_match_comparison(
-        data, component, field, not_greater_or_equal, ref_value, NotGreaterOrEqualError, default_value
+        data,
+        component,
+        field,
+        not_greater_or_equal,
+        ref_value,
+        NotGreaterOrEqualError,
+        default_value,
     )
 
 
@@ -238,7 +248,9 @@ def all_less_or_equal(
     def not_less_or_equal(val: np.ndarray, *ref: np.ndarray):
         return np.greater(val, *ref)
 
-    return none_match_comparison(data, component, field, not_less_or_equal, ref_value, NotLessOrEqualError)
+    return none_match_comparison(
+        data, component, field, not_less_or_equal, ref_value, NotLessOrEqualError
+    )
 
 
 # pylint: disable=too-many-arguments
@@ -275,7 +287,9 @@ def all_between(  # pylint: disable=too-many-positional-arguments
     """
 
     def outside(val: np.ndarray, *ref: np.ndarray) -> np.ndarray:
-        return np.logical_or(np.less_equal(val, np.minimum(*ref)), np.greater_equal(val, np.maximum(*ref)))
+        return np.logical_or(
+            np.less_equal(val, np.minimum(*ref)), np.greater_equal(val, np.maximum(*ref))
+        )
 
     return none_match_comparison(
         data, component, field, outside, (ref_value_1, ref_value_2), NotBetweenError, default_value
@@ -369,9 +383,13 @@ def none_match_comparison(  # pylint: disable=too-many-arguments
         where the value in the field of interest matched the comparison.
     """
     if default_value_1 is not None:
-        _set_default_value(data=data, component=component, field=field, default_value=default_value_1)
+        _set_default_value(
+            data=data, component=component, field=field, default_value=default_value_1
+        )
     if default_value_2 is not None:
-        _set_default_value(data=data, component=component, field=field, default_value=default_value_2)
+        _set_default_value(
+            data=data, component=component, field=field, default_value=default_value_2
+        )
     component_data = data[component]
     if not isinstance(component_data, np.ndarray):
         raise NotImplementedError()  # TODO(mgovers): add support for columnar data
@@ -389,7 +407,9 @@ def none_match_comparison(  # pylint: disable=too-many-arguments
     return []
 
 
-def all_identical(data: SingleDataset, component: ComponentType, field: str) -> list[NotIdenticalError]:
+def all_identical(
+    data: SingleDataset, component: ComponentType, field: str
+) -> list[NotIdenticalError]:
     """
     Check that for all records of a particular type of component, the values in the 'field' column are identical.
 
@@ -435,7 +455,10 @@ def all_enabled_identical(
             - the amount of unique such values.
     """
     return all_identical(
-        {key: (value if key is not component else value[value[status_field] != 0]) for key, value in data.items()},
+        {
+            key: (value if key is not component else value[value[status_field] != 0])
+            for key, value in data.items()
+        },
         component,
         field,
     )
@@ -496,7 +519,11 @@ def all_cross_unique(
     if duplicate_ids:
         fields_with_duplicated_ids = {f for f, _ in duplicate_ids}
         ids_with_duplicated_ids = {(c, i) for (c, _), i in duplicate_ids}
-        return [MultiComponentNotUniqueError(list(fields_with_duplicated_ids), list(ids_with_duplicated_ids))]
+        return [
+            MultiComponentNotUniqueError(
+                list(fields_with_duplicated_ids), list(ids_with_duplicated_ids)
+            )
+        ]
     return []
 
 
@@ -566,7 +593,9 @@ def all_valid_associated_enum_values(  # pylint: disable=too-many-positional-arg
     for enum_type in enums:
         valid.update(list(enum_type))
 
-    invalid = np.isin(data[component][field][mask], np.array(list(valid), dtype=np.int8), invert=True)
+    invalid = np.isin(
+        data[component][field][mask], np.array(list(valid), dtype=np.int8), invert=True
+    )
     if invalid.any():
         ids = data[component]["id"][mask][invalid].flatten().tolist()
         return [InvalidAssociatedEnumValueError(component, [field, ref_object_id_field], ids, enum)]
@@ -643,7 +672,9 @@ def all_not_two_values_zero(
         A list containing zero or one TwoValuesZeroError, listing all ids where the value in the two fields of interest
         were both zero.
     """
-    invalid = np.logical_and(np.equal(data[component][field_1], 0.0), np.equal(data[component][field_2], 0.0))
+    invalid = np.logical_and(
+        np.equal(data[component][field_1], 0.0), np.equal(data[component][field_2], 0.0)
+    )
     if invalid.any():
         if invalid.ndim > 1:
             invalid = invalid.any(axis=1)
@@ -718,7 +749,9 @@ def ids_valid_in_update_data_set(
     return []
 
 
-def all_finite(data: SingleDataset, exceptions: dict[ComponentType, list[str]] | None = None) -> list[InfinityError]:
+def all_finite(
+    data: SingleDataset, exceptions: dict[ComponentType, list[str]] | None = None
+) -> list[InfinityError]:
     """
     Check that for all records in all component, the values in all columns are finite value, i.e. float values other
     than inf, or -inf. Nan values are ignored, as in all other comparison functions. You can use non_missing() to
@@ -769,7 +802,9 @@ def no_strict_subset_missing(data: SingleDataset, fields: list[str], component_t
     if component_type in data:
         component_data = data[component_type]
         instances_with_nan_data = np.full_like([], False, shape=(len(component_data),), dtype=bool)
-        instances_with_non_nan_data = np.full_like([], False, shape=(len(component_data),), dtype=bool)
+        instances_with_non_nan_data = np.full_like(
+            [], False, shape=(len(component_data),), dtype=bool
+        )
         for field in fields:
             nan_value = _nan_type(component_type, field)
             asym_axes = tuple(range(component_data.ndim, component_data[field].ndim))
@@ -796,7 +831,9 @@ def no_strict_subset_missing(data: SingleDataset, fields: list[str], component_t
                 ),
             )
 
-        instances_with_invalid_data = np.logical_and(instances_with_nan_data, instances_with_non_nan_data)
+        instances_with_invalid_data = np.logical_and(
+            instances_with_nan_data, instances_with_non_nan_data
+        )
 
         ids = component_data["id"][instances_with_invalid_data]
         if len(ids) > 0:
@@ -823,7 +860,9 @@ def not_all_missing(data: SingleDataset, fields: list[str], component_type: Comp
     errors = []
     if component_type in data:
         component_data = data[component_type]
-        instances_with_all_nan_data = np.full_like([], True, shape=(len(component_data),), dtype=bool)
+        instances_with_all_nan_data = np.full_like(
+            [], True, shape=(len(component_data),), dtype=bool
+        )
 
         for field in fields:
             nan_value = _nan_type(component_type, field)
@@ -847,7 +886,9 @@ def not_all_missing(data: SingleDataset, fields: list[str], component_type: Comp
     return errors
 
 
-def none_missing(data: SingleDataset, component: ComponentType, fields: str | list[str]) -> list[MissingValueError]:
+def none_missing(
+    data: SingleDataset, component: ComponentType, fields: str | list[str]
+) -> list[MissingValueError]:
     """
     Check that for all records of a particular type of component, the values in the 'fields' columns are not NaN.
     Returns an empty list on success, or a list containing a single error object on failure.
@@ -899,7 +940,9 @@ def valid_p_q_sigma(data: SingleDataset, component: ComponentType) -> list[PQSig
     p_inf = np.isinf(p_sigma)
     q_inf = np.isinf(q_sigma)
     mis_match = p_nan != q_nan
-    mis_match |= np.logical_xor(p_inf, q_inf)  # infinite sigmas are supported if they are both infinite
+    mis_match |= np.logical_xor(
+        p_inf, q_inf
+    )  # infinite sigmas are supported if they are both infinite
     if p_sigma.ndim > 1:  # if component == 'asym_power_sensor':
         mis_match = mis_match.any(axis=-1)
         mis_match |= np.logical_xor(p_nan.any(axis=-1), p_nan.all(axis=-1))
@@ -914,7 +957,11 @@ def valid_p_q_sigma(data: SingleDataset, component: ComponentType) -> list[PQSig
 
 
 def all_valid_clocks(
-    data: SingleDataset, component: ComponentType, clock_field: str, winding_from_field: str, winding_to_field: str
+    data: SingleDataset,
+    component: ComponentType,
+    clock_field: str,
+    winding_from_field: str,
+    winding_to_field: str,
 ) -> list[TransformerClockError]:
     """
     Custom validation rule: Odd clock number is only allowed for Dy(n) or Y(N)d configuration.
@@ -979,7 +1026,13 @@ def all_valid_fault_phases(
             FaultPhase.default_value,
             FaultPhase.nan,
         ],
-        FaultType.two_phase: [FaultPhase.ab, FaultPhase.ac, FaultPhase.bc, FaultPhase.default_value, FaultPhase.nan],
+        FaultType.two_phase: [
+            FaultPhase.ab,
+            FaultPhase.ac,
+            FaultPhase.bc,
+            FaultPhase.default_value,
+            FaultPhase.nan,
+        ],
         FaultType.two_phase_to_ground: [
             FaultPhase.ab,
             FaultPhase.ac,

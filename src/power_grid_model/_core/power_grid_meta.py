@@ -40,7 +40,12 @@ class PGMCType(IntEnum):
     double3 = 3
 
 
-_CTYPE_NUMPY_MAP = {PGMCType.double: "f8", PGMCType.int32: "i4", PGMCType.int8: "i1", PGMCType.double3: "(3,)f8"}
+_CTYPE_NUMPY_MAP = {
+    PGMCType.double: "f8",
+    PGMCType.int32: "i4",
+    PGMCType.int8: "i1",
+    PGMCType.double3: "(3,)f8",
+}
 _ENDIANNESS = "<" if pgc.is_little_endian() == 1 else ">"
 _NAN_VALUE_MAP = {
     f"{_ENDIANNESS}f8": np.nan,
@@ -91,7 +96,9 @@ def _generate_meta_data() -> PowerGridMetaData:
     n_datasets = pgc.meta_n_datasets()
     for i in range(n_datasets):
         dataset = pgc.meta_get_dataset_by_idx(i)
-        py_meta_data[_str_to_datatype(pgc.meta_dataset_name(dataset))] = _generate_meta_dataset(dataset)
+        py_meta_data[_str_to_datatype(pgc.meta_dataset_name(dataset))] = _generate_meta_dataset(
+            dataset
+        )
     return py_meta_data
 
 
@@ -108,8 +115,8 @@ def _generate_meta_dataset(dataset: DatasetPtr) -> DatasetMetaData:
     n_components = pgc.meta_n_components(dataset)
     for i in range(n_components):
         component = pgc.meta_get_component_by_idx(dataset, i)
-        py_meta_dataset[_str_to_component_type(pgc.meta_component_name(component))] = _generate_meta_component(
-            component
+        py_meta_dataset[_str_to_component_type(pgc.meta_component_name(component))] = (
+            _generate_meta_component(component)
         )
     return py_meta_dataset
 
@@ -128,7 +135,9 @@ def _generate_meta_component(component: ComponentPtr) -> ComponentMetaData:
     dtype = np.dtype({k: v for k, v in dtype_dict.items() if k != "nans"})  # type: ignore
     nans = dict(zip(dtype_dict["names"], dtype_dict["nans"]))
     if dtype.alignment != pgc.meta_component_alignment(component):
-        raise TypeError(f'Aligment mismatch for component type: "{pgc.meta_component_name(component)}" !')
+        raise TypeError(
+            f'Aligment mismatch for component type: "{pgc.meta_component_name(component)}" !'
+        )
     # get single nan scalar
     nan_scalar = np.empty(1, dtype=dtype)
     for key, value in nans.items():
@@ -203,7 +212,9 @@ def initialize_array(
     if not isinstance(shape, tuple):
         shape = (shape,)
     if empty:
-        return np.empty(shape=shape, dtype=power_grid_meta_data[data_type][component_type].dtype, order="C")
+        return np.empty(
+            shape=shape, dtype=power_grid_meta_data[data_type][component_type].dtype, order="C"
+        )
     return np.full(
         shape=shape,
         fill_value=power_grid_meta_data[data_type][component_type].nan_scalar,

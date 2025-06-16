@@ -92,7 +92,9 @@ class ValidationError(ABC):
             if isinstance(id_lookup, list):
                 id_lookup = dict(enumerate(id_lookup))
             context["ids"] = (
-                {i: id_lookup.get(i[1] if isinstance(i, tuple) else i) for i in self.ids} if self.ids else set()
+                {i: id_lookup.get(i[1] if isinstance(i, tuple) else i) for i in self.ids}
+                if self.ids
+                else set()
             )
         for key in context:
             if hasattr(self, key + "_str"):
@@ -180,7 +182,9 @@ class MultiComponentValidationError(ValidationError):
     ids: list[tuple[ComponentType, int]]
     _message = "Fields {field} are not valid for {n} {objects}."
 
-    def __init__(self, fields: list[tuple[ComponentType, str]], ids: list[tuple[ComponentType, int]]):
+    def __init__(
+        self, fields: list[tuple[ComponentType, str]], ids: list[tuple[ComponentType, int]]
+    ):
         """
         Args:
             fields: List of field names, formatted as tuples (component, field)
@@ -193,7 +197,9 @@ class MultiComponentValidationError(ValidationError):
         if len(self.field) < 2:
             raise ValueError(f"{type(self).__name__} expects at least two fields: {self.field}")
         if len(self.component) < 2:
-            raise ValueError(f"{type(self).__name__} expects at least two components: {self.component}")
+            raise ValueError(
+                f"{type(self).__name__} expects at least two components: {self.component}"
+            )
 
 
 class NotIdenticalError(SingleFieldValidationError):
@@ -241,7 +247,13 @@ class InvalidEnumValueError(SingleFieldValidationError):
     _message = "Field {field} contains invalid {enum} values for {n} {objects}."
     enum: Type[Enum] | list[Type[Enum]]
 
-    def __init__(self, component: ComponentType, field: str, ids: list[int], enum: Type[Enum] | list[Type[Enum]]):
+    def __init__(
+        self,
+        component: ComponentType,
+        field: str,
+        ids: list[int],
+        enum: Type[Enum] | list[Type[Enum]],
+    ):
         super().__init__(component, field, ids)
         self.enum = enum
 
@@ -318,7 +330,9 @@ class InvalidIdError(SingleFieldValidationError):
 
     """
 
-    _message = "Field {field} does not contain a valid {ref_components} id for {n} {objects}. {filters}"
+    _message = (
+        "Field {field} does not contain a valid {ref_components} id for {n} {objects}. {filters}"
+    )
     ref_components: list[ComponentType]
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -332,7 +346,9 @@ class InvalidIdError(SingleFieldValidationError):
         # pylint: disable=too-many-positional-arguments
         super().__init__(component=component, field=field, ids=ids)
         ref_components = ref_components if ref_components is not None else []
-        self.ref_components = [ref_components] if isinstance(ref_components, (str, ComponentType)) else ref_components
+        self.ref_components = (
+            [ref_components] if isinstance(ref_components, (str, ComponentType)) else ref_components
+        )
         self.filters = filters if filters else None
 
     @property
@@ -349,11 +365,17 @@ class InvalidIdError(SingleFieldValidationError):
         """
         if not self.filters:
             return ""
-        filters = ", ".join(f"{k}={v.name if isinstance(v, Enum) else v}" for k, v in self.filters.items())
+        filters = ", ".join(
+            f"{k}={v.name if isinstance(v, Enum) else v}" for k, v in self.filters.items()
+        )
         return f"({filters})"
 
     def __eq__(self, other):
-        return super().__eq__(other) and self.ref_components == other.ref_components and self.filters == other.filters
+        return (
+            super().__eq__(other)
+            and self.ref_components == other.ref_components
+            and self.filters == other.filters
+        )
 
 
 class TwoValuesZeroError(MultiFieldValidationError):
@@ -375,7 +397,13 @@ class ComparisonError(SingleFieldValidationError):
 
     RefType = int | float | str | tuple[int | float | str, ...]
 
-    def __init__(self, component: ComponentType, field: str, ids: list[int], ref_value: "ComparisonError.RefType"):
+    def __init__(
+        self,
+        component: ComponentType,
+        field: str,
+        ids: list[int],
+        ref_value: "ComparisonError.RefType",
+    ):
         super().__init__(component, field, ids)
         self.ref_value = ref_value
 
@@ -469,7 +497,9 @@ class FaultPhaseError(MultiFieldValidationError):
     The fault phase does not match the fault type.
     """
 
-    _message = "The fault phase is not applicable to the corresponding fault type for {n} {objects}."
+    _message = (
+        "The fault phase is not applicable to the corresponding fault type for {n} {objects}."
+    )
 
 
 class PQSigmaPairError(MultiFieldValidationError):
@@ -486,7 +516,9 @@ class InvalidAssociatedEnumValueError(MultiFieldValidationError):
     E.g. When a transformer tap regulator has a branch3 control side but regulates a transformer.
     """
 
-    _message = "The combination of fields {field} results in invalid {enum} values for {n} {objects}."
+    _message = (
+        "The combination of fields {field} results in invalid {enum} values for {n} {objects}."
+    )
     enum: Type[Enum] | list[Type[Enum]]
 
     def __init__(

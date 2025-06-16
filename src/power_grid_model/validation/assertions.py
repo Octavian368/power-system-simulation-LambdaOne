@@ -19,7 +19,9 @@ class ValidationException(ValueError):
     to display a summary of all the errors when printing the exception.
     """
 
-    def __init__(self, errors: list[ValidationError] | dict[int, list[ValidationError]], name: str = "data"):
+    def __init__(
+        self, errors: list[ValidationError] | dict[int, list[ValidationError]], name: str = "data"
+    ):
         super().__init__(f"Invalid {name}")
         self.errors = errors
         self.name = name
@@ -29,7 +31,9 @@ class ValidationException(ValueError):
 
 
 def assert_valid_input_data(
-    input_data: SingleDataset, calculation_type: CalculationType | None = None, symmetric: bool = True
+    input_data: SingleDataset,
+    calculation_type: CalculationType | None = None,
+    symmetric: bool = True,
 ):
     """
     Validates the entire input dataset:
@@ -86,7 +90,10 @@ def assert_valid_batch_data(
         ValidationException: if the contents are invalid.
     """
     validation_errors = validate_batch_data(
-        input_data=input_data, update_data=update_data, calculation_type=calculation_type, symmetric=symmetric
+        input_data=input_data,
+        update_data=update_data,
+        calculation_type=calculation_type,
+        symmetric=symmetric,
     )
     if validation_errors:
         raise ValidationException(validation_errors, "update_data")

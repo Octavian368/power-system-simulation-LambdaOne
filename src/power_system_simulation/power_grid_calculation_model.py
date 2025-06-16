@@ -60,7 +60,9 @@ def _convert_to_columnar_format(data: dict) -> dict:
         if isinstance(entries, np.ndarray) and entries.dtype.names:
             columnar_data[component] = {
                 key: entries[key].astype(
-                    np.int32 if key in int32_fields else np.int8 if key in int8_fields else np.float64
+                    np.int32
+                    if key in int32_fields
+                    else np.int8 if key in int8_fields else np.float64
                 )
                 for key in entries.dtype.names
             }
@@ -114,7 +116,9 @@ class PowerGridCalculator:
         self.model = PowerGridModel(columnar_data)
         self.input_data = columnar_data
 
-    def create_batch_update(self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame) -> Dict:
+    def create_batch_update(
+        self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame
+    ) -> Dict:
         """
         Creates a batch update for active and reactive profiles.
 
@@ -147,7 +151,9 @@ class PowerGridCalculator:
         reactive_df.rename(columns={"Timestamp": "timestamp"}, inplace=True)
 
         active_df = active_df.melt(id_vars=["timestamp"], var_name="load_id", value_name="value")
-        reactive_df = reactive_df.melt(id_vars=["timestamp"], var_name="load_id", value_name="value")
+        reactive_df = reactive_df.melt(
+            id_vars=["timestamp"], var_name="load_id", value_name="value"
+        )
 
         timestamps = active_df["timestamp"].unique()
         load_ids = active_df["load_id"].unique()
@@ -255,7 +261,10 @@ class PowerGridCalculator:
             all_losses[i] = (scenario["p_from"] + scenario["p_to"]) * 1e-3
 
         energy_losses = []
-        time_deltas = [(timestamps[i + 1] - timestamps[i]).total_seconds() / 3600 for i in range(len(timestamps) - 1)]
+        time_deltas = [
+            (timestamps[i + 1] - timestamps[i]).total_seconds() / 3600
+            for i in range(len(timestamps) - 1)
+        ]
 
         for line_idx in range(n_lines):
             total_energy = 0.0

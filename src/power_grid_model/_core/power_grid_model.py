@@ -131,9 +131,13 @@ class PowerGridModel:
         self._all_component_count = None
         # create new
         prepared_input = prepare_input_view(_map_to_component_types(input_data))
-        self._model_ptr = pgc.create_model(system_frequency, input_data=prepared_input.get_dataset_ptr())
+        self._model_ptr = pgc.create_model(
+            system_frequency, input_data=prepared_input.get_dataset_ptr()
+        )
         assert_no_error()
-        self._all_component_count = {k: v for k, v in prepared_input.get_info().total_elements().items() if v > 0}
+        self._all_component_count = {
+            k: v for k, v in prepared_input.get_info().total_elements().items() if v > 0
+        }
 
     def update(self, *, update_data: Dataset):
         """
@@ -259,7 +263,9 @@ class PowerGridModel:
         options: Options,
         continue_on_batch_error: bool,
         decode_error: bool,
-        experimental_features: _ExperimentalFeatures | str,  # pylint: disable=too-many-arguments,unused-argument
+        experimental_features: (
+            _ExperimentalFeatures | str
+        ),  # pylint: disable=too-many-arguments,unused-argument
     ):
         """
         Core calculation routine
@@ -396,7 +402,9 @@ class PowerGridModel:
         output_component_types: ComponentAttributeMapping = None,
         continue_on_batch_error: bool = False,
         decode_error: bool = True,
-        short_circuit_voltage_scaling: ShortCircuitVoltageScaling | str = ShortCircuitVoltageScaling.maximum,
+        short_circuit_voltage_scaling: (
+            ShortCircuitVoltageScaling | str
+        ) = ShortCircuitVoltageScaling.maximum,
         experimental_features: _ExperimentalFeatures | str = _ExperimentalFeatures.disabled,
     ) -> dict[ComponentType, np.ndarray]:
         calculation_type = CalculationType.short_circuit
@@ -623,7 +631,9 @@ class PowerGridModel:
         output_component_types: ComponentAttributeMapping = None,
         continue_on_batch_error: bool = False,
         decode_error: bool = True,
-        short_circuit_voltage_scaling: ShortCircuitVoltageScaling | str = ShortCircuitVoltageScaling.maximum,
+        short_circuit_voltage_scaling: (
+            ShortCircuitVoltageScaling | str
+        ) = ShortCircuitVoltageScaling.maximum,
     ) -> dict[ComponentType, np.ndarray]:
         """
         Calculate a short circuit once with the current model attributes.

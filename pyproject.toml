@@ -58,6 +58,6 @@ known_third_party = ["pandas", "pytest", "black", "pylint"]
 
 [tool.pylint.main]
 fail-under = 10
-max-line-length = 120  # Adjusted for better readability
+max-line-length = 200  # Adjusted for better readability
 py-version = "3.12"
 max-locals = 30  # Optional: increased the max locals to avoid pylint error

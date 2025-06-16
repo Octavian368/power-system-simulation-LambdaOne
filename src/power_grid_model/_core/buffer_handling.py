@@ -106,7 +106,9 @@ def _get_raw_component_data_view(
     return None
 
 
-def _get_raw_attribute_data_view(data: np.ndarray, schema: ComponentMetaData, attribute: AttributeType) -> VoidPtr:
+def _get_raw_attribute_data_view(
+    data: np.ndarray, schema: ComponentMetaData, attribute: AttributeType
+) -> VoidPtr:
     """
     Get a raw view on the data.
 
@@ -193,7 +195,9 @@ def _get_dense_buffer_properties(
     if is_batch is not None and is_batch != actual_is_batch:
         raise ValueError(f"Provided 'is batch' is incorrect for the provided data. {VALIDATOR_MSG}")
     if batch_size is not None and batch_size != actual_batch_size:
-        raise ValueError(f"Provided 'batch size' is incorrect for the provided data. {VALIDATOR_MSG}")
+        raise ValueError(
+            f"Provided 'batch size' is incorrect for the provided data. {VALIDATOR_MSG}"
+        )
 
     return BufferProperties(
         is_sparse=is_sparse_property,
@@ -241,7 +245,10 @@ def _get_sparse_buffer_properties(
         shape = attribute_data.shape[:ndim]
         columns = list(contents)
         for attribute, attribute_data in contents.items():
-            if attribute_data.ndim != ndim + schema.dtype[attribute].ndim or attribute_data.shape[:ndim] != shape:
+            if (
+                attribute_data.ndim != ndim + schema.dtype[attribute].ndim
+                or attribute_data.shape[:ndim] != shape
+            ):
                 raise ValueError(f"Data buffers must be consistent. {VALIDATOR_MSG}")
 
     contents_size = shape[0]
@@ -283,12 +290,16 @@ def get_buffer_properties(
         the properties of the dataset component.
     """
     if not is_sparse(data):
-        return _get_dense_buffer_properties(data=data, schema=schema, is_batch=is_batch, batch_size=batch_size)
+        return _get_dense_buffer_properties(
+            data=data, schema=schema, is_batch=is_batch, batch_size=batch_size
+        )
 
     if is_batch is not None and not is_batch:
         raise ValueError("Sparse data must be batch data")
 
-    return _get_sparse_buffer_properties(data=cast(SparseBatchArray, data), schema=schema, batch_size=batch_size)
+    return _get_sparse_buffer_properties(
+        data=cast(SparseBatchArray, data), schema=schema, batch_size=batch_size
+    )
 
 
 def _get_attribute_buffer_views(
@@ -309,7 +320,9 @@ def _get_attribute_buffer_views(
 
     return {
         attribute: CAttributeBuffer(
-            data=_get_raw_attribute_data_view(data=attribute_data, schema=schema, attribute=attribute)
+            data=_get_raw_attribute_data_view(
+                data=attribute_data, schema=schema, attribute=attribute
+            )
         )
         for attribute, attribute_data in data.items()
     }
@@ -333,7 +346,9 @@ def _get_uniform_buffer_view(
     Returns:
         the C API buffer view.
     """
-    properties = _get_dense_buffer_properties(data, schema=schema, is_batch=is_batch, batch_size=batch_size)
+    properties = _get_dense_buffer_properties(
+        data, schema=schema, is_batch=is_batch, batch_size=batch_size
+    )
 
     return CBuffer(
         data=_get_raw_component_data_view(data=data, schema=schema),
@@ -423,7 +438,9 @@ def create_buffer(properties: BufferProperties, schema: ComponentMetaData) -> Co
     return _create_uniform_buffer(properties=properties, schema=schema)
 
 
-def _create_uniform_buffer(properties: BufferProperties, schema: ComponentMetaData) -> DenseBatchData:
+def _create_uniform_buffer(
+    properties: BufferProperties, schema: ComponentMetaData
+) -> DenseBatchData:
     """
     Create a uniform buffer with the provided properties and type.
 
@@ -448,7 +465,9 @@ def _create_uniform_buffer(properties: BufferProperties, schema: ComponentMetaDa
     return _create_contents_buffer(shape=shape, dtype=schema.dtype, columns=properties.columns)
 
 
-def _create_sparse_buffer(properties: BufferProperties, schema: ComponentMetaData) -> SparseBatchData:
+def _create_sparse_buffer(
+    properties: BufferProperties, schema: ComponentMetaData
+) -> SparseBatchData:
     """
     Create a sparse buffer with the provided properties and type.
 
@@ -467,11 +486,15 @@ def _create_sparse_buffer(properties: BufferProperties, schema: ComponentMetaDat
         dtype=schema.dtype,
         columns=properties.columns,
     )
-    indptr: IndexPointer = np.array([0] * properties.batch_size + [properties.n_total_elements], dtype=IdxC)
+    indptr: IndexPointer = np.array(
+        [0] * properties.batch_size + [properties.n_total_elements], dtype=IdxC
+    )
     return cast(SparseBatchData, {"data": data, "indptr": indptr})
 
 
-def _create_contents_buffer(shape, dtype, columns: list[AttributeType] | None) -> SingleComponentData | DenseBatchData:
+def _create_contents_buffer(
+    shape, dtype, columns: list[AttributeType] | None
+) -> SingleComponentData | DenseBatchData:
     if columns is None:
         return np.empty(shape=shape, dtype=dtype)
 

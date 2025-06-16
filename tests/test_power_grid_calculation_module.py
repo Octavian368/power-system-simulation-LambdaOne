@@ -38,7 +38,16 @@ def sample_input_data():
                     "i_n": 1000,
                 }
             ],
-            "sym_load": [{"id": 100, "node": 1, "p_specified": 1.0, "q_specified": 0.5, "status": 1, "type": 1}],
+            "sym_load": [
+                {
+                    "id": 100,
+                    "node": 1,
+                    "p_specified": 1.0,
+                    "q_specified": 0.5,
+                    "status": 1,
+                    "type": 1,
+                }
+            ],
         },
     }
 
@@ -62,8 +71,12 @@ def test_mismatched_timestamps():
     data = sample_input_data()
     calc = PowerGridCalculator(data)
 
-    df1 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-01", periods=2, freq="h", name="Timestamp"))
-    df2 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-02", periods=2, freq="h", name="Timestamp"))
+    df1 = pd.DataFrame(
+        {100: [1, 2]}, index=pd.date_range("2024-01-01", periods=2, freq="h", name="Timestamp")
+    )
+    df2 = pd.DataFrame(
+        {100: [1, 2]}, index=pd.date_range("2024-01-02", periods=2, freq="h", name="Timestamp")
+    )
 
     with pytest.raises(TimestampMismatchError):
         calc.create_batch_update(df1, df2)

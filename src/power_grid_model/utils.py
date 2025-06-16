@@ -45,8 +45,12 @@ from power_grid_model.errors import PowerGridError, PowerGridSerializationError
 from power_grid_model.typing import ComponentAttributeMapping
 
 _DEPRECATED_FUNCTION_MSG = "This function is deprecated."
-_DEPRECATED_JSON_DESERIALIZATION_MSG = f"{_DEPRECATED_FUNCTION_MSG} Please use json_deserialize_to_file instead."
-_DEPRECATED_JSON_SERIALIZATION_MSG = f"{_DEPRECATED_FUNCTION_MSG} Please use json_serialize_from_file instead."
+_DEPRECATED_JSON_DESERIALIZATION_MSG = (
+    f"{_DEPRECATED_FUNCTION_MSG} Please use json_deserialize_to_file instead."
+)
+_DEPRECATED_JSON_SERIALIZATION_MSG = (
+    f"{_DEPRECATED_FUNCTION_MSG} Please use json_serialize_from_file instead."
+)
 
 
 def get_dataset_scenario(dataset: BatchDataset, scenario: int) -> SingleDataset:
@@ -83,10 +87,16 @@ def get_dataset_scenario(dataset: BatchDataset, scenario: int) -> SingleDataset:
             return _get_sparse_scenario(data, indptr)
 
         if is_columnar(component_scenarios):
-            return {attribute: _get_dense_scenario(attribute_data) for attribute, attribute_data in data.items()}
+            return {
+                attribute: _get_dense_scenario(attribute_data)
+                for attribute, attribute_data in data.items()
+            }
         return _get_dense_scenario(cast_type(DenseBatchArray, component_scenarios))
 
-    return {component: _get_component_scenario(component_data) for component, component_data in dataset.items()}
+    return {
+        component: _get_component_scenario(component_data)
+        for component, component_data in dataset.items()
+    }
 
 
 def get_dataset_batch_size(dataset: BatchDataset) -> int:
@@ -160,7 +170,10 @@ def json_serialize_to_file(
     """
     data = _map_to_component_types(data)
     result = json_serialize(
-        data=data, dataset_type=dataset_type, use_compact_list=use_compact_list, indent=-1 if indent is None else indent
+        data=data,
+        dataset_type=dataset_type,
+        use_compact_list=use_compact_list,
+        indent=-1 if indent is None else indent,
     )
 
     with open(file_path, mode="w", encoding="utf-8") as file_pointer:
@@ -189,7 +202,10 @@ def msgpack_deserialize_from_file(
 
 
 def msgpack_serialize_to_file(
-    file_path: Path, data: Dataset, dataset_type: DatasetType | None = None, use_compact_list: bool = False
+    file_path: Path,
+    data: Dataset,
+    dataset_type: DatasetType | None = None,
+    use_compact_list: bool = False,
 ):
     """
     Export msgpack data in most recent format.
@@ -204,7 +220,9 @@ def msgpack_serialize_to_file(
         Save to file.
     """
     data = _map_to_component_types(data)
-    result = msgpack_serialize(data=data, dataset_type=dataset_type, use_compact_list=use_compact_list)
+    result = msgpack_serialize(
+        data=data, dataset_type=dataset_type, use_compact_list=use_compact_list
+    )
 
     with open(file_path, mode="wb") as file_pointer:
         file_pointer.write(result)
@@ -226,15 +244,24 @@ def import_json_data(json_file: Path, data_type: str, *args, **kwargs) -> Datase
     """
     warnings.warn(_DEPRECATED_JSON_DESERIALIZATION_MSG, DeprecationWarning)
     if args:
-        warnings.warn("Provided positional arguments at index 2 and following are deprecated.", DeprecationWarning)
+        warnings.warn(
+            "Provided positional arguments at index 2 and following are deprecated.",
+            DeprecationWarning,
+        )
     if kwargs:
-        warnings.warn(f"Provided keyword arguments {list(kwargs.keys())} are deprecated.", DeprecationWarning)
+        warnings.warn(
+            f"Provided keyword arguments {list(kwargs.keys())} are deprecated.", DeprecationWarning
+        )
 
     return _compatibility_deprecated_import_json_data(json_file=json_file, data_type=data_type)  # type: ignore
 
 
 def export_json_data(
-    json_file: Path, data: Dataset, indent: int | None = 2, compact: bool = False, use_deprecated_format: bool = True
+    json_file: Path,
+    data: Dataset,
+    indent: int | None = 2,
+    compact: bool = False,
+    use_deprecated_format: bool = True,
 ):
     """
     [deprecated] Export json data in a deprecated serialization format.
@@ -264,13 +291,17 @@ def export_json_data(
         )
         _compatibility_deprecated_export_json_data(json_file=json_file, data=data)
     else:
-        json_serialize_to_file(file_path=json_file, data=data, use_compact_list=compact, indent=indent)
+        json_serialize_to_file(
+            file_path=json_file, data=data, use_compact_list=compact, indent=indent
+        )
 
 
 def _compatibility_deprecated_export_json_data(
     json_file: Path, data: Dataset, indent: int | None = 2, compact: bool = False
 ):
-    serialized_data = json_serialize(data=data, use_compact_list=compact, indent=-1 if indent is None else indent)
+    serialized_data = json_serialize(
+        data=data, use_compact_list=compact, indent=-1 if indent is None else indent
+    )
     old_format_serialized_data = json.dumps(json.loads(serialized_data)["data"])
     with open(json_file, mode="w", encoding="utf-8") as file_pointer:
         file_pointer.write(old_format_serialized_data)
@@ -292,9 +323,13 @@ def import_input_data(json_file: Path) -> SingleDataset:
     """
     warnings.warn(_DEPRECATED_JSON_DESERIALIZATION_MSG, DeprecationWarning)
 
-    data = _compatibility_deprecated_import_json_data(json_file=json_file, data_type=DatasetType.input)
+    data = _compatibility_deprecated_import_json_data(
+        json_file=json_file, data_type=DatasetType.input
+    )
     assert isinstance(data, dict)
-    assert all(isinstance(component, np.ndarray) and component.ndim == 1 for component in data.values())
+    assert all(
+        isinstance(component, np.ndarray) and component.ndim == 1 for component in data.values()
+    )
     return cast_type(SingleDataset, data)
 
 
@@ -316,7 +351,9 @@ def import_update_data(json_file: Path) -> BatchDataset:
 
     return cast_type(
         BatchDataset,
-        _compatibility_deprecated_import_json_data(json_file=json_file, data_type=DatasetType.update),
+        _compatibility_deprecated_import_json_data(
+            json_file=json_file, data_type=DatasetType.update
+        ),
     )
 
 
@@ -364,7 +401,9 @@ def self_test():
             "data": {
                 "node": [{"id": 1, "u_rated": 10000}],
                 "source": [{"id": 2, "node": 1, "u_ref": 1, "sk": 1e20}],
-                "sym_load": [{"id": 3, "node": 1, "status": 1, "type": 0, "p_specified": 0, "q_specified": 0}],
+                "sym_load": [
+                    {"id": 3, "node": 1, "status": 1, "type": 0, "p_specified": 0, "q_specified": 0}
+                ],
             },
         }
 
@@ -392,7 +431,9 @@ def self_test():
 
             assert output_data is not None
             assert math.isclose(
-                output_data["data"]["node"][0]["u"], input_data["data"]["node"][0]["u_rated"], abs_tol=1e-9
+                output_data["data"]["node"][0]["u"],
+                input_data["data"]["node"][0]["u_rated"],
+                abs_tol=1e-9,
             )
 
             print("Self test finished.")
