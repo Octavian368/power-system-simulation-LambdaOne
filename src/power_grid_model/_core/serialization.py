@@ -11,7 +11,11 @@ from ctypes import byref
 from enum import IntEnum
 
 from power_grid_model._core.data_types import Dataset
-from power_grid_model._core.dataset_definitions import DatasetType, _map_to_component_types, _str_to_datatype
+from power_grid_model._core.dataset_definitions import (
+    DatasetType,
+    _map_to_component_types,
+    _str_to_datatype,
+)
 from power_grid_model._core.error_handling import assert_no_error
 from power_grid_model._core.errors import PowerGridSerializationError
 from power_grid_model._core.index_integer import IdxC
