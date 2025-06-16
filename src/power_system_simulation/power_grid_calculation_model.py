@@ -1,3 +1,9 @@
+"""
+This module handles power grid calculations, including batch updates, time-series power flow,
+and result aggregation. It interacts with the power_grid_model package for grid simulation.
+"""
+
+
 import json
 from collections import defaultdict
 from datetime import datetime
@@ -25,12 +31,14 @@ from power_grid_model.validation import (
 
 class TimestampMismatchError(Exception):
     """Raised when timestamps in active and reactive load profiles do not match."""
-    pass
+
+    
 
 
 class LoadIdsDoNotMatchError(Exception):
     """Raised when the load IDs in active and reactive load profiles do not match."""
-    pass
+
+    
 
 
 def _convert_to_columnar_format(data: dict) -> dict:
