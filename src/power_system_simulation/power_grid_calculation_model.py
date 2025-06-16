@@ -1,25 +1,26 @@
 import json
-import pandas as pd
-import numpy as np
-from typing import Dict, List
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+from typing import Dict, List
+
+import numpy as np
+import pandas as pd
 
 from power_grid_model import (
-    PowerGridModel,
     CalculationMethod,
     CalculationType,
-    initialize_array,
-    DatasetType,
     ComponentType,
-)
-from power_grid_model.utils import json_deserialize
-from power_grid_model.validation import (
-    validate_input_data,
-    validate_batch_data,
-    errors_to_string,
+    DatasetType,
+    PowerGridModel,
+    initialize_array,
 )
 from power_grid_model._core.errors import PowerGridSerializationError
+from power_grid_model.utils import json_deserialize
+from power_grid_model.validation import (
+    errors_to_string,
+    validate_batch_data,
+    validate_input_data,
+)
 
 
 class TimestampMismatchError(Exception):
@@ -43,9 +44,9 @@ def _convert_to_columnar_format(data: dict) -> dict:
         # Structured NumPy array from deserialization
         if isinstance(entries, np.ndarray) and entries.dtype.names:
             columnar_data[component] = {
-                key: entries[key].astype(np.int32 if key in int32_fields else
-                                         np.int8 if key in int8_fields else
-                                         np.float64)
+                key: entries[key].astype(
+                    np.int32 if key in int32_fields else np.int8 if key in int8_fields else np.float64
+                )
                 for key in entries.dtype.names
             }
             continue
@@ -89,7 +90,9 @@ class PowerGridCalculator:
         self.input_data = columnar_data
 
     def create_batch_update(self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame) -> Dict:
-        if not isinstance(active_load_profile.index, pd.DatetimeIndex) or not isinstance(reactive_load_profile.index, pd.DatetimeIndex):
+        if not isinstance(active_load_profile.index, pd.DatetimeIndex) or not isinstance(
+            reactive_load_profile.index, pd.DatetimeIndex
+        ):
             raise ValueError("Input DataFrames must have a DatetimeIndex.")
 
         active_df = active_load_profile.copy()
@@ -100,7 +103,7 @@ class PowerGridCalculator:
         active_df = active_df.reset_index()
         reactive_df = reactive_df.reset_index()
 
-        if not active_df['Timestamp'].equals(reactive_df['Timestamp']):
+        if not active_df["Timestamp"].equals(reactive_df["Timestamp"]):
             raise TimestampMismatchError("Timestamps in active and reactive profiles do not match.")
         if not all(active_df.columns == reactive_df.columns):
             raise LoadIdsDoNotMatchError("Load IDs in active and reactive profiles don't match.")
@@ -111,27 +114,32 @@ class PowerGridCalculator:
         active_df = active_df.melt(id_vars=["timestamp"], var_name="load_id", value_name="value")
         reactive_df = reactive_df.melt(id_vars=["timestamp"], var_name="load_id", value_name="value")
 
-        timestamps = active_df['timestamp'].unique()
-        load_ids = active_df['load_id'].unique()
+        timestamps = active_df["timestamp"].unique()
+        load_ids = active_df["load_id"].unique()
 
         sym_load_update = initialize_array(
             DatasetType.update,
             ComponentType.sym_load,
             (len(timestamps), len(load_ids)),
         )
-        sym_load_update['id'] = load_ids
+        sym_load_update["id"] = load_ids
 
         for i, ts in enumerate(timestamps):
-            ts_active = active_df[active_df['timestamp'] == ts].sort_values('load_id')
-            ts_reactive = reactive_df[reactive_df['timestamp'] == ts].sort_values('load_id')
-            sym_load_update['p_specified'][i] = ts_active['value'].values
-            sym_load_update['q_specified'][i] = ts_reactive['value'].values
+            ts_active = active_df[active_df["timestamp"] == ts].sort_values("load_id")
+            ts_reactive = reactive_df[reactive_df["timestamp"] == ts].sort_values("load_id")
+            sym_load_update["p_specified"][i] = ts_active["value"].values
+            sym_load_update["q_specified"][i] = ts_reactive["value"].values
 
         return {ComponentType.sym_load: sym_load_update}
 
-    def run_time_series_power_flow(self, update_data: Dict, symmetric=True,
-                                   calculation_method=CalculationMethod.newton_raphson,
-                                   error_tolerance=1e-8, max_iterations=20) -> Dict:
+    def run_time_series_power_flow(
+        self,
+        update_data: Dict,
+        symmetric=True,
+        calculation_method=CalculationMethod.newton_raphson,
+        error_tolerance=1e-8,
+        max_iterations=20,
+    ) -> Dict:
         try:
             return self.model.calculate_power_flow(
                 update_data=update_data,
@@ -154,36 +162,38 @@ class PowerGridCalculator:
     def aggregate_voltage_results(self, results: Dict) -> pd.DataFrame:
         voltage_data = []
         for scenario in results[ComponentType.node]:
-            u_pu = scenario['u_pu']
-            node_ids = scenario['id']
-            voltage_data.append({
-                'Max_Voltage': np.max(u_pu),
-                'Max_Voltage_Node': node_ids[np.argmax(u_pu)],
-                'Min_Voltage': np.min(u_pu),
-                'Min_Voltage_Node': node_ids[np.argmin(u_pu)],
-            })
+            u_pu = scenario["u_pu"]
+            node_ids = scenario["id"]
+            voltage_data.append(
+                {
+                    "Max_Voltage": np.max(u_pu),
+                    "Max_Voltage_Node": node_ids[np.argmax(u_pu)],
+                    "Min_Voltage": np.min(u_pu),
+                    "Min_Voltage_Node": node_ids[np.argmin(u_pu)],
+                }
+            )
         return pd.DataFrame(voltage_data)
 
     def aggregate_line_results(self, results: Dict, timestamps: List[datetime]) -> pd.DataFrame:
         line_results = results[ComponentType.line]
         n_scenarios = len(line_results)
-        n_lines = len(line_results[0]['id'])
+        n_lines = len(line_results[0]["id"])
 
-        line_ids = line_results[0]['id']
+        line_ids = line_results[0]["id"]
         all_loadings = np.zeros((n_scenarios, n_lines))
         all_losses = np.zeros((n_scenarios, n_lines))
 
         for i, scenario in enumerate(line_results):
-            all_loadings[i] = scenario['loading']
-            all_losses[i] = (scenario['p_from'] + scenario['p_to']) * 1e-3
+            all_loadings[i] = scenario["loading"]
+            all_losses[i] = (scenario["p_from"] + scenario["p_to"]) * 1e-3
 
         energy_losses = []
-        time_deltas = [(timestamps[i+1] - timestamps[i]).total_seconds() / 3600 for i in range(len(timestamps)-1)]
+        time_deltas = [(timestamps[i + 1] - timestamps[i]).total_seconds() / 3600 for i in range(len(timestamps) - 1)]
 
         for line_idx in range(n_lines):
             total_energy = 0.0
             for i in range(len(time_deltas)):
-                avg_loss = (all_losses[i][line_idx] + all_losses[i+1][line_idx]) / 2
+                avg_loss = (all_losses[i][line_idx] + all_losses[i + 1][line_idx]) / 2
                 total_energy += avg_loss * time_deltas[i]
             energy_losses.append(total_energy)
 
@@ -192,19 +202,21 @@ class PowerGridCalculator:
         max_timestamps = [timestamps[np.argmax(all_loadings[:, i])] for i in range(n_lines)]
         min_timestamps = [timestamps[np.argmin(all_loadings[:, i])] for i in range(n_lines)]
 
-        return pd.DataFrame({
-            'line_id': line_ids,
-            'Total_Loss': energy_losses,
-            'Max_Loading': max_loadings,
-            'Max_Loading_Timestamp': max_timestamps,
-            'Min_Loading': min_loadings,
-            'Min_Loading_Timestamp': min_timestamps
-        }).set_index('line_id')
+        return pd.DataFrame(
+            {
+                "line_id": line_ids,
+                "Total_Loss": energy_losses,
+                "Max_Loading": max_loadings,
+                "Max_Loading_Timestamp": max_timestamps,
+                "Min_Loading": min_loadings,
+                "Min_Loading_Timestamp": min_timestamps,
+            }
+        ).set_index("line_id")
 
     @classmethod
     def from_json_file(cls, json_path: str):
         try:
-            with open(json_path, 'r') as f:
+            with open(json_path, "r") as f:
                 data = json_deserialize(f.read())
             return cls(data)
         except FileNotFoundError:
