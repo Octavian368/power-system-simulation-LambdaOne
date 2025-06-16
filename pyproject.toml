@@ -25,7 +25,8 @@ dev = [
   'pylint',
   'pytest-cov',
   'networkx',
-  'black[jupyter]'
+  'black[jupyter]',
+  'pandas'
 ]
 
 # add more dependencies for running the examples
