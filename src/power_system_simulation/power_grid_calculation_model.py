@@ -19,15 +19,14 @@ from power_grid_model.validation import (
     validate_batch_data,
     errors_to_string,
 )
+from power_grid_model._core.errors import PowerGridSerializationError
 
 
 class TimestampMismatchError(Exception):
-    """Raised when the timestamps of active and reactive profiles don't match."""
     pass
 
 
 class LoadIdsDoNotMatchError(Exception):
-    """Raised when the IDs in active and reactive profiles differ."""
     pass
 
 
@@ -37,10 +36,21 @@ def _convert_to_columnar_format(data: dict) -> dict:
     int8_fields = {"status", "from_status", "to_status", "type"}
 
     for component, entries in data.items():
-        if not entries:
+        if entries is None or len(entries) == 0:
             columnar_data[component] = {}
             continue
 
+        # Structured NumPy array from deserialization
+        if isinstance(entries, np.ndarray) and entries.dtype.names:
+            columnar_data[component] = {
+                key: entries[key].astype(np.int32 if key in int32_fields else
+                                         np.int8 if key in int8_fields else
+                                         np.float64)
+                for key in entries.dtype.names
+            }
+            continue
+
+        # Fallback for list-of-dict
         field_map = defaultdict(list)
         for entry in entries:
             for k, v in entry.items():
@@ -79,23 +89,27 @@ class PowerGridCalculator:
         self.input_data = columnar_data
 
     def create_batch_update(self, active_load_profile: pd.DataFrame, reactive_load_profile: pd.DataFrame) -> Dict:
-        active_df = active_load_profile.reset_index().melt(id_vars=["Timestamp"], var_name="load_id", value_name="value")
-        reactive_df = reactive_load_profile.reset_index().melt(id_vars=["Timestamp"], var_name="load_id", value_name="value")
+        if not isinstance(active_load_profile.index, pd.DatetimeIndex) or not isinstance(reactive_load_profile.index, pd.DatetimeIndex):
+            raise ValueError("Input DataFrames must have a DatetimeIndex.")
+
+        active_df = active_load_profile.copy()
+        reactive_df = reactive_load_profile.copy()
+        active_df.index.name = "Timestamp"
+        reactive_df.index.name = "Timestamp"
+
+        active_df = active_df.reset_index()
+        reactive_df = reactive_df.reset_index()
+
+        if not active_df['Timestamp'].equals(reactive_df['Timestamp']):
+            raise TimestampMismatchError("Timestamps in active and reactive profiles do not match.")
+        if not all(active_df.columns == reactive_df.columns):
+            raise LoadIdsDoNotMatchError("Load IDs in active and reactive profiles don't match.")
 
         active_df.rename(columns={"Timestamp": "timestamp"}, inplace=True)
         reactive_df.rename(columns={"Timestamp": "timestamp"}, inplace=True)
 
-        if 'timestamp' not in active_df.columns or 'timestamp' not in reactive_df.columns:
-            raise KeyError("Missing 'timestamp' column in input DataFrames.")
-
-        if not active_df['timestamp'].equals(reactive_df['timestamp']):
-            raise TimestampMismatchError("Timestamps in active and reactive profiles do not match.")
-
-        if 'load_id' not in active_df.columns or 'load_id' not in reactive_df.columns:
-            raise ValueError("Missing 'load_id' column in input DataFrames.")
-
-        if not active_df['load_id'].equals(reactive_df['load_id']):
-            raise LoadIdsDoNotMatchError("Load IDs in active and reactive profiles don't match.")
+        active_df = active_df.melt(id_vars=["timestamp"], var_name="load_id", value_name="value")
+        reactive_df = reactive_df.melt(id_vars=["timestamp"], var_name="load_id", value_name="value")
 
         timestamps = active_df['timestamp'].unique()
         load_ids = active_df['load_id'].unique()
@@ -110,7 +124,6 @@ class PowerGridCalculator:
         for i, ts in enumerate(timestamps):
             ts_active = active_df[active_df['timestamp'] == ts].sort_values('load_id')
             ts_reactive = reactive_df[reactive_df['timestamp'] == ts].sort_values('load_id')
-
             sym_load_update['p_specified'][i] = ts_active['value'].values
             sym_load_update['q_specified'][i] = ts_reactive['value'].values
 
@@ -127,7 +140,7 @@ class PowerGridCalculator:
                 error_tolerance=error_tolerance,
                 max_iterations=max_iterations,
             )
-        except RuntimeError as e:
+        except RuntimeError:
             errors = validate_batch_data(
                 input_data=self.input_data,
                 update_data=update_data,
@@ -180,14 +193,13 @@ class PowerGridCalculator:
         min_timestamps = [timestamps[np.argmin(all_loadings[:, i])] for i in range(n_lines)]
 
         return pd.DataFrame({
-        'line_id': line_ids,
-        'Total_Loss': energy_losses,
-        'Max_Loading': max_loadings,
-        'Max_Loading_Timestamp': max_timestamps,
-        'Min_Loading': min_loadings,
-        'Min_Loading_Timestamp': min_timestamps
-    }).set_index('line_id')
-
+            'line_id': line_ids,
+            'Total_Loss': energy_losses,
+            'Max_Loading': max_loadings,
+            'Max_Loading_Timestamp': max_timestamps,
+            'Min_Loading': min_loadings,
+            'Min_Loading_Timestamp': min_timestamps
+        }).set_index('line_id')
 
     @classmethod
     def from_json_file(cls, json_path: str):
@@ -197,5 +209,5 @@ class PowerGridCalculator:
             return cls(data)
         except FileNotFoundError:
             raise ValueError(f"File not found: {json_path}")
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, PowerGridSerializationError):
             raise ValueError(f"Invalid JSON in file: {json_path}")
