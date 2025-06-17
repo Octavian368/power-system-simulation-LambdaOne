@@ -155,7 +155,8 @@ class GraphProcessor:
         temp_graph.remove_edge(u, v)
         components = list(nx.connected_components(temp_graph))
         downstream_component = next(
-            (comp for comp in components if self.source_vertex_id not in comp and (u in comp or v in comp)), None
+            (comp for comp in components if self.source_vertex_id not in comp and (u in comp or v in comp)),
+            None,
         )
 
         return list(downstream_component) if downstream_component else []

@@ -1,6 +1,5 @@
 """
-This module provides the PowerGridCalculator class and utility functions for performing power 
-grid calculations, including power flow, load updates, and voltage aggregation.
+This module provides the PowerGridCalculator class and utility functions for performing power grid calculations, including power flow, load updates, and voltage aggregation.
 It handles the processing of grid data and provides methods to calculate and aggregate power flow results.
 """
 
@@ -11,6 +10,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+
 from power_grid_model import (
     CalculationMethod,
     CalculationType,
@@ -21,7 +21,11 @@ from power_grid_model import (
 )
 from power_grid_model._core.errors import PowerGridSerializationError
 from power_grid_model.utils import json_deserialize
-from power_grid_model.validation import errors_to_string, validate_batch_data, validate_input_data
+from power_grid_model.validation import (
+    errors_to_string,
+    validate_batch_data,
+    validate_input_data,
+)
 
 
 class TimestampMismatchError(Exception):
