@@ -25,7 +25,9 @@ DenseBatchArray: TypeAlias = np.ndarray
 
 SingleColumnarData = dict[AttributeType, SingleColumn]
 
+
 _SingleComponentData = TypeVar("_SingleComponentData", SingleArray, SingleColumnarData)  # deduction helper
+
 SingleComponentData = SingleArray | SingleColumnarData
 
 
@@ -96,7 +98,9 @@ BatchArray = DenseBatchArray | SparseBatchArray
 
 BatchComponentData = BatchArray | BatchColumnarData
 
+
 _BatchComponentData = TypeVar("_BatchComponentData", BatchArray, BatchColumnarData)  # deduction helper
+
 
 
 BatchDataset = dict[ComponentTypeVar, _BatchComponentData]
@@ -106,6 +110,7 @@ DataArray = SingleArray | BatchArray
 
 
 _ComponentData = TypeVar("_ComponentData", SingleComponentData, BatchComponentData)  # deduction helper
+
 ComponentData = DataArray | ColumnarData
 
 Dataset = dict[ComponentTypeVar, _ComponentData]

@@ -19,7 +19,9 @@ class ValidationException(ValueError):
     to display a summary of all the errors when printing the exception.
     """
 
+
     def __init__(self, errors: list[ValidationError] | dict[int, list[ValidationError]], name: str = "data"):
+
         super().__init__(f"Invalid {name}")
         self.errors = errors
         self.name = name

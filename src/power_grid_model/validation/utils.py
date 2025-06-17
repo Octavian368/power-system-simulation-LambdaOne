@@ -84,7 +84,9 @@ def _eval_field_expression(data: np.ndarray, expression: str) -> np.ndarray:
         return data[fields[0]]
 
     assert len(fields) == 2
+
     zero_div = np.logical_or(np.equal(data[fields[1]], 0.0), np.logical_not(np.isfinite(data[fields[1]])))
+
     if np.any(zero_div):
         result = np.full_like(data[fields[0]], np.nan)
         np.true_divide(data[fields[0]], data[fields[1]], out=result, where=~zero_div)
@@ -111,7 +113,9 @@ def _update_component_data(
     indexed on the "id" field and only non-NaN values are overwritten.
     """
     if isinstance(input_data, np.ndarray) and isinstance(update_data, np.ndarray):
+
         return _update_component_array_data(component=component, input_data=input_data, update_data=update_data)
+
 
     raise NotImplementedError()  # TODO(mgovers): add support for columnar data
 
@@ -174,7 +178,9 @@ def errors_to_string(
     if errors is None or len(errors) == 0:
         return f"{name}: OK"
     if isinstance(errors, dict):
+
         return "\n".join(errors_to_string(err, f"{name}, batch #{i}", details) for i, err in sorted(errors.items()))
+
     if len(errors) == 1 and not details:
         return f"There is a validation error in {name}:\n\t{errors[0]}"
     if len(errors) == 1:
@@ -190,7 +196,9 @@ def errors_to_string(
     return msg
 
 
+
 def _nan_type(component: _ComponentTypeLike, field: str, data_type: DatasetType = DatasetType.input):
+
     """
     Helper function to retrieve the nan value for a certain field as defined in the power_grid_meta_data.
     """
@@ -198,7 +206,9 @@ def _nan_type(component: _ComponentTypeLike, field: str, data_type: DatasetType 
     return power_grid_meta_data[data_type][component].nans[field]
 
 
+
 def _get_indexer(source: np.ndarray, target: np.ndarray, default_value: int | None = None) -> np.ndarray:
+
     """
     Given array of values from a source and a target dataset.
     Find the position of each value in the target dataset in the context of the source dataset.
@@ -226,7 +236,9 @@ def _get_indexer(source: np.ndarray, target: np.ndarray, default_value: int | No
     """
 
     permutation_sort = np.argsort(source)  # complexity O(N_input * logN_input)
+
     indices = np.searchsorted(source, target, sorter=permutation_sort)  # complexity O(N_update * logN_input)
+
 
     if default_value is None:
         return permutation_sort[indices]
@@ -235,7 +247,9 @@ def _get_indexer(source: np.ndarray, target: np.ndarray, default_value: int | No
         return np.full_like(target, fill_value=default_value)
 
     clipped_indices = np.take(permutation_sort, indices, mode="clip")
+
     return np.where(source[clipped_indices] == target, permutation_sort[clipped_indices], default_value)
+
 
 
 def _set_default_value(
@@ -269,7 +283,9 @@ def _set_default_value(
         data[component][field][mask] = default_value
 
 
+
 def _get_valid_ids(data: SingleDataset, ref_components: _ComponentTypeLike | list[ComponentTypeVar]) -> list[int]:
+
     """
     This function returns the valid IDs specified by all ref_components
 
@@ -299,7 +315,9 @@ def _get_valid_ids(data: SingleDataset, ref_components: _ComponentTypeLike | lis
     return list(valid_ids)
 
 
+
 def _get_mask(data: SingleDataset, component: _ComponentTypeLike, field: str, **filters: Any) -> np.ndarray:
+
     """
     Get a mask based on the specified filters. E.g. measured_terminal_type=MeasuredTerminalType.source.
 

@@ -93,7 +93,9 @@ def validate_input_data(
         Error: KeyError | TypeError | ValueError: if the data structure is invalid.
     """
     # Convert to row based if in columnar or mixed format format
+
     row_input_data = _compatibility_convert_row_columnar_dataset(input_data, None, DatasetType.input)
+
 
     # A deep copy is made of the input data, since default values will be added in the validation process
     input_data_copy = copy.deepcopy(row_input_data)
@@ -141,21 +143,27 @@ def validate_batch_data(
         Error: KeyError | TypeError | ValueError: if the data structure is invalid.
     """
     # Convert to row based if in columnar or mixed format
+
     row_input_data = _compatibility_convert_row_columnar_dataset(input_data, None, DatasetType.input)
+
 
     # A deep copy is made of the input data, since default values will be added in the validation process
     input_data_copy = copy.deepcopy(row_input_data)
     assert_valid_data_structure(input_data_copy, DatasetType.input)
 
+
     input_errors: list[ValidationError] = list(validate_unique_ids_across_components(input_data_copy))
+
 
     batch_data = _convert_batch_dataset_to_batch_list(update_data, DatasetType.update)
 
     errors = {}
     for batch, batch_update_data in enumerate(batch_data):
+
         row_update_data = _compatibility_convert_row_columnar_dataset(batch_update_data, None, DatasetType.update)
         assert_valid_data_structure(row_update_data, DatasetType.update)
         id_errors: list[IdNotInDatasetError | InvalidIdError] = validate_ids(row_update_data, input_data_copy)
+
 
         batch_errors = input_errors + id_errors
 
@@ -186,7 +194,9 @@ def assert_valid_data_structure(data: Dataset, data_type: DatasetType) -> None:
     if data_type not in {DatasetType.input, DatasetType.update}:
         raise KeyError(f"Unexpected data type '{data_type}' (should be 'input' or 'update')")
 
+
     component_dtype = {component: meta.dtype for component, meta in power_grid_meta_data[data_type].items()}
+
     for component, array in data.items():
         # Check if component name is valid
         if component not in component_dtype:
@@ -228,7 +238,9 @@ def validate_unique_ids_across_components(
     return _all_cross_unique(data, [(component, "id") for component in data])
 
 
+
 def validate_ids(update_data: SingleDataset, input_data: SingleDataset) -> list[IdNotInDatasetError | InvalidIdError]:
+
     """
     Checks if all ids of the components in the update data:
      - exist and match those in the input data
@@ -246,7 +258,9 @@ def validate_ids(update_data: SingleDataset, input_data: SingleDataset) -> list[
 
     """
     errors = (
+
         _ids_valid_in_update_data_set(update_data, input_data, component, "update_data") for component in update_data
+
     )
     return list(chain(*errors))
 
@@ -273,10 +287,12 @@ def _process_power_sigma_and_p_q_sigma(
 
         # virtual patch to handle missing power_sigma
         asym_axes = tuple(range(sensor_data.ndim, p_sigma.ndim))
+
         mask = np.logical_and(np.isnan(power_sigma), np.any(np.logical_not(np.isnan(p_sigma)), axis=asym_axes))
         power_sigma[mask] = np.nansum(p_sigma[mask], axis=asym_axes)
 
         mask = np.logical_and(np.isnan(power_sigma), np.any(np.logical_not(np.isnan(q_sigma)), axis=asym_axes))
+
         power_sigma[mask] = np.nansum(q_sigma[mask], axis=asym_axes)
 
 
@@ -452,7 +468,9 @@ def _validate_required_in_data(data: SingleDataset, required: dict[ComponentType
     return results
 
 
+
 def validate_values(data: SingleDataset, calculation_type: CalculationType | None = None) -> list[ValidationError]:
+
     """
     For each component supplied in the data, call the appropriate validation function
 
@@ -509,7 +527,9 @@ def validate_values(data: SingleDataset, calculation_type: CalculationType | Non
     if calculation_type in (None, CalculationType.short_circuit) and "fault" in data:
         errors += validate_fault(data)
 
+
     if calculation_type in (None, CalculationType.power_flow) and "transformer_tap_regulator" in data:
+
         errors += validate_transformer_tap_regulator(data)
 
     return errors
@@ -569,7 +589,9 @@ def validate_asym_line(data: SingleDataset) -> list[ValidationError]:
     required_c_matrix_fields = ["c_aa", "c_ba", "c_bb", "c_ca", "c_cb", "c_cc"]
     c_fields = ["c0", "c1"]
     for field in (
+
         required_fields + optional_r_matrix_fields + optional_x_matrix_fields + required_c_matrix_fields + c_fields
+
     ):
         errors += _all_greater_than_zero(data, ComponentType.asym_line, field)
 
@@ -604,7 +626,9 @@ def validate_transformer(data: SingleDataset) -> list[ValidationError]:
     errors += _all_valid_enum_values(data, ComponentType.transformer, "winding_from", WindingType)
     errors += _all_valid_enum_values(data, ComponentType.transformer, "winding_to", WindingType)
     errors += _all_between_or_at(data, ComponentType.transformer, "clock", 0, 12)
+
     errors += _all_valid_clocks(data, ComponentType.transformer, "clock", "winding_from", "winding_to")
+
     errors += _all_valid_enum_values(data, ComponentType.transformer, "tap_side", BranchSide)
     errors += _all_between_or_at(
         data,
@@ -615,7 +639,9 @@ def validate_transformer(data: SingleDataset) -> list[ValidationError]:
         data[ComponentType.transformer]["tap_nom"],
         0,
     )
+
     errors += _all_between_or_at(data, ComponentType.transformer, "tap_nom", "tap_min", "tap_max", 0)
+
     errors += _all_greater_than_or_equal_to_zero(data, ComponentType.transformer, "tap_size")
     errors += _all_greater_or_equal(
         data,
@@ -624,7 +650,9 @@ def validate_transformer(data: SingleDataset) -> list[ValidationError]:
         "pk_min/sn",
         data[ComponentType.transformer]["uk"],
     )
+
     errors += _all_between(data, ComponentType.transformer, "uk_min", 0, 1, data[ComponentType.transformer]["uk"])
+
     errors += _all_greater_or_equal(
         data,
         ComponentType.transformer,
@@ -632,7 +660,9 @@ def validate_transformer(data: SingleDataset) -> list[ValidationError]:
         "pk_max/sn",
         data[ComponentType.transformer]["uk"],
     )
+
     errors += _all_between(data, ComponentType.transformer, "uk_max", 0, 1, data[ComponentType.transformer]["uk"])
+
     errors += _all_greater_than_or_equal_to_zero(
         data, ComponentType.transformer, "pk_min", data[ComponentType.transformer]["pk"]
     )
@@ -697,8 +727,10 @@ def validate_three_winding_transformer(data: SingleDataset) -> list[ValidationEr
         data[ComponentType.three_winding_transformer]["tap_nom"],
         0,
     )
+
     errors += _all_between_or_at(data, ComponentType.three_winding_transformer, "tap_nom", "tap_min", "tap_max", 0)
     errors += _all_greater_than_or_equal_to_zero(data, ComponentType.three_winding_transformer, "tap_size")
+
     errors += _all_greater_or_equal(
         data,
         ComponentType.three_winding_transformer,
@@ -886,7 +918,9 @@ def validate_source(data: SingleDataset) -> list[ValidationError]:
     return errors
 
 
+
 def validate_generic_load_gen(data: SingleDataset, component: ComponentType) -> list[ValidationError]:
+
     errors = validate_appliance(data, component)
     errors += _all_valid_enum_values(data, component, "type", LoadGenType)
     return errors
@@ -897,7 +931,9 @@ def validate_shunt(data: SingleDataset) -> list[ValidationError]:
     return errors
 
 
+
 def validate_generic_voltage_sensor(data: SingleDataset, component: ComponentType) -> list[ValidationError]:
+
     errors = validate_base(data, component)
     errors += _all_greater_than_zero(data, component, "u_sigma")
     errors += _all_greater_than_zero(data, component, "u_measured")
@@ -905,10 +941,12 @@ def validate_generic_voltage_sensor(data: SingleDataset, component: ComponentTyp
     return errors
 
 
+
 def validate_generic_power_sensor(data: SingleDataset, component: ComponentType) -> list[ValidationError]:
     errors = validate_base(data, component)
     errors += _all_greater_than_zero(data, component, "power_sigma")
     errors += _all_valid_enum_values(data, component, "measured_terminal_type", MeasuredTerminalType)
+
     errors += _all_valid_ids(
         data,
         component,
@@ -1020,7 +1058,9 @@ def validate_fault(data: SingleDataset) -> list[ValidationError]:
     errors += _all_valid_enum_values(data, ComponentType.fault, "fault_type", FaultType)
     errors += _all_valid_enum_values(data, ComponentType.fault, "fault_phase", FaultPhase)
     errors += _all_valid_fault_phases(data, ComponentType.fault, "fault_type", "fault_phase")
+
     errors += _all_valid_ids(data, ComponentType.fault, field="fault_object", ref_components=ComponentType.node)
+
     errors += _all_greater_than_or_equal_to_zero(data, ComponentType.fault, "r_f")
     errors += _all_enabled_identical(data, ComponentType.fault, "fault_type", "status")
     errors += _all_enabled_identical(data, ComponentType.fault, "fault_phase", "status")
@@ -1061,7 +1101,9 @@ def validate_transformer_tap_regulator(data: SingleDataset) -> list[ValidationEr
         [ComponentType.three_winding_transformer],
         [Branch3Side],
     )
+
     errors += _all_greater_than_or_equal_to_zero(data, ComponentType.transformer_tap_regulator, "u_set")
+
     errors += _all_greater_than_zero(data, ComponentType.transformer_tap_regulator, "u_band")
     errors += _all_greater_than_or_equal_to_zero(
         data, ComponentType.transformer_tap_regulator, "line_drop_compensation_r", 0.0

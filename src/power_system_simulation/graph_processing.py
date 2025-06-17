@@ -112,7 +112,9 @@ class GraphProcessor:
         """
         graph = nx.Graph()
         graph.add_nodes_from(self.vertex_ids)
-        for edge_id, (u, v), enabled in zip(self.edge_ids, self.edge_vertex_id_pairs, self.edge_enabled):
+        for edge_id, (u, v), enabled in zip(
+            self.edge_ids, self.edge_vertex_id_pairs, self.edge_enabled
+        ):
             if enabled:
                 graph.add_edge(u, v, edge_id=edge_id)
         return graph
@@ -156,6 +158,7 @@ class GraphProcessor:
         components = list(nx.connected_components(temp_graph))
         downstream_component = next(
             (comp for comp in components if self.source_vertex_id not in comp and (u in comp or v in comp)),
+
             None,
         )
 
@@ -172,7 +175,9 @@ class GraphProcessor:
             nx.Graph: The subgraph (may be empty).
         """
         downstream_vertices = self.find_downstream_vertices(edge_id)
-        return self.graph.subgraph(downstream_vertices).copy() if downstream_vertices else nx.Graph()
+        return (
+            self.graph.subgraph(downstream_vertices).copy() if downstream_vertices else nx.Graph()
+        )
 
     def find_alternative_edges(self, disabled_edge_id: int) -> List[int]:
         """

@@ -110,7 +110,9 @@ class Serializer(ABC):
         instance._dataset = CConstDataset(instance._data, dataset_type=dataset_type)
         assert_no_error()
 
+
         instance._serializer = pgc.create_serializer(instance._dataset.get_dataset_ptr(), serialization_type.value)
+
         assert_no_error()
 
         return instance
@@ -132,7 +134,9 @@ class Serializer(ABC):
         Returns:
             A serialized string containing the dataset.
         """
+
         data = pgc.serializer_get_to_zero_terminated_string(self._serializer, int(use_compact_list), indent)
+
         assert_no_error()
         return data
 
@@ -148,7 +152,9 @@ class Serializer(ABC):
         """
         raw_data = CharPtr()  # pylint: disable(not-callable)
         size = IdxC()  # pylint: disable(not-callable)
+
         pgc.serializer_get_to_binary_buffer(self._serializer, int(use_compact_list), byref(raw_data), byref(size))
+
         assert_no_error()
 
         result = raw_data[: size.value]
@@ -271,7 +277,9 @@ def json_serialize(
     data = _map_to_component_types(data)
     if dataset_type is not None:
         dataset_type = _str_to_datatype(dataset_type)
+
     result = JsonSerializer(data=data, dataset_type=dataset_type).dump(use_compact_list=use_compact_list, indent=indent)
+
     assert_no_error()
     return result
 
@@ -321,6 +329,8 @@ def msgpack_serialize(
     data = _map_to_component_types(data)
     if dataset_type is not None:
         dataset_type = _str_to_datatype(dataset_type)
+
     result = MsgpackSerializer(data=data, dataset_type=dataset_type).dump(use_compact_list=use_compact_list)
+
     assert_no_error()
     return result

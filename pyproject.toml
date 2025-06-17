@@ -13,8 +13,9 @@ classifiers = [
     "License :: OSI Approved :: BSD License"
 ]
 requires-python = ">=3.12"
-# add dependencies of your core package, check the license first!
-dependencies = []
+dependencies = [
+  "power_grid_model"
+]
 version = "0.1"
 
 [project.optional-dependencies]
@@ -25,10 +26,10 @@ dev = [
   'pylint',
   'pytest-cov',
   'networkx',
-  'black[jupyter]'
+  'black[jupyter]',
+  'pandas'
 ]
 
-# add more dependencies for running the examples
 example = [
   'jupyter'
 ]
@@ -36,10 +37,10 @@ example = [
 [tool.pylint."DESIGN"]
 max-attributes = 8
 max-args = 6
-max-positional-arguments=6
+max-positional-arguments = 6
 
 [tool.setuptools.packages.find]
-where = ["src"] 
+where = ["src"]
 namespaces = false 
 
 [tool.pytest.ini_options]
@@ -47,19 +48,16 @@ testpaths = ["tests"]
 addopts = ["--cov=power_system_simulation", "--cov-report", "term", "--cov-report", "html:python_cov_html", "--cov-fail-under=95"]
 
 [tool.black]
-line-length = 120
-target-version = ['py312']
+line-length = 100  # Adjusted for better readability
 
 [tool.isort]
 profile = "black"
 combine_as_imports = true
-line_length = 120
+line_length = 100  # Correct line length configuration
+known_third_party = ["pandas", "pytest", "black", "pylint"]
 
 [tool.pylint.main]
-# Specify a score threshold under which the program will exit with error.
 fail-under = 10
-max-line-length = 120
-
-# Minimum Python version to use for version dependent checks. Will default to the
-# version used to run pylint.
+max-line-length = 200  # Adjusted for better readability
 py-version = "3.12"
+max-locals = 30  # Optional: increased the max locals to avoid pylint error

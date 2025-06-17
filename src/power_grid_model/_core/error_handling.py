@@ -54,11 +54,14 @@ _CONFLICT_VOLTAGE_RE = re.compile(
     r"Conflicting voltage for line (-?\d+)\n voltage at from node (-?\d+) is (.*)\n"
     r" voltage at to node (-?\d+) is (.*)\n"
 )
+
 _INVALID_BRANCH_RE = re.compile(r"Branch (-?\d+) has the same from- and to-node (-?\d+),\n This is not allowed!\n")
+
 _INVALID_BRANCH3_RE = re.compile(
     r"Branch3 (-?\d+) is connected to the same node at least twice. Node 1\/2\/3: (-?\d+)\/(-?\d+)\/(-?\d+),\n"
     r" This is not allowed!\n"
 )
+
 _INVALID_TRANSFORMER_CLOCK_RE = re.compile(r"Invalid clock for transformer (-?\d+), clock (-?\d+)\n")
 _SPARSE_MATRIX_ERROR_RE = re.compile(r"Sparse matrix error")  # multiple different flavors
 _NOT_OBSERVABLE_ERROR_RE = re.compile(r"Not enough measurements available for state estimation.\n")
@@ -67,6 +70,7 @@ _MAX_ITERATION_REACHED_RE = re.compile(r"Maximum number of iterations reached")
 _CONFLICT_ID_RE = re.compile(r"Conflicting id detected: (-?\d+)\n")
 _ID_NOT_FOUND_RE = re.compile(r"The id cannot be found: (-?\d+)\n")
 _INVALID_MEASURED_OBJECT_RE = re.compile(r"(\w+) measurement is not supported for object of type (\w+)")
+
 _INVALID_REGULATED_OBJECT_RE = re.compile(
     r"(\w+) regulator is not supported for object "
 )  # potentially multiple different flavors
@@ -77,12 +81,14 @@ _AUTOMATIC_TAP_INPUT_ERROR_RE = re.compile(r"Automatic tap changer has invalid c
 
 _ID_WRONG_TYPE_RE = re.compile(r"Wrong type for object with id (-?\d+)\n")
 _CONFLICTING_ANGLE_MEASUREMENT_TYPE_RE = re.compile(r"Conflicting angle measurement type")
+
 _INVALID_CALCULATION_METHOD_RE = re.compile(r"The calculation method is invalid for this calculation!")
 _INVALID_SHORT_CIRCUIT_PHASE_OR_TYPE_RE = re.compile(r"short circuit type")  # multiple different flavors
 _POWER_GRID_DATASET_ERROR_RE = re.compile(r"Dataset error: ")  # multiple different flavors
 _POWER_GRID_UNREACHABLE_HIT_RE = re.compile(r"Unreachable code hit when executing ")  # multiple different flavors
 _POWER_GRID_SEARCH_OPT_INCMPT_RE = re.compile(r"Search method is incompatible with optimization strategy: ")
 _POWER_GRID_NOT_IMPLEMENTED_ERROR_RE = re.compile(r"The functionality is either not supported or not yet implemented!")
+
 
 _ERROR_MESSAGE_PATTERNS = {
     _MISSING_CASE_FOR_ENUM_RE: MissingCaseForEnumError,
@@ -147,7 +153,9 @@ def find_error(batch_size: int = 1, decode_error: bool = True) -> RuntimeError |
         failed_msgptr = pgc.batch_errors()
         error.failed_scenarios = np.ctypeslib.as_array(failed_idxptr, shape=(n_fails,)).copy()
         error.error_messages = [failed_msgptr[i].decode() for i in range(n_fails)]  # type: ignore
+
         error.errors = [_interpret_error(message, decode_error=decode_error) for message in error.error_messages]
+
         all_scenarios = np.arange(batch_size, dtype=IdxNp)
         mask = np.ones(batch_size, dtype=np.bool_)
         mask[error.failed_scenarios] = False

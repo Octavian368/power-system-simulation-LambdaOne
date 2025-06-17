@@ -190,12 +190,16 @@ class CMutableDataset:
         instance._mutable_dataset = MutableDatasetPtr()
         instance._buffer_views = []
 
+
         instance._dataset_type = dataset_type if dataset_type in DatasetType else get_dataset_type(data)
+
         instance._schema = power_grid_meta_data[instance._dataset_type]
 
         if data:
             first_component, first_component_data = next(iter(data.items()))
+
             first_sub_info = get_buffer_properties(data=first_component_data, schema=instance._schema[first_component])
+
             instance._is_batch = first_sub_info.is_batch
             instance._batch_size = first_sub_info.batch_size
         else:
@@ -254,7 +258,9 @@ class CMutableDataset:
         for component, component_data in data.items():
             self._add_component_data(component, component_data, allow_unknown=False)
 
+
     def _add_component_data(self, component: ComponentType, data: ComponentData, allow_unknown: bool = False):
+
         """
         Add Power Grid Model data for a single component to the mutable dataset view.
 
@@ -301,13 +307,17 @@ class CMutableDataset:
         assert_no_error()
 
     def _validate_properties(self, data: ComponentData, schema: ComponentMetaData):
+
         properties = get_buffer_properties(data, schema=schema, is_batch=self._is_batch, batch_size=self._batch_size)
+
         if properties.is_batch != self._is_batch:
             raise ValueError(
                 f"Dataset type (single or batch) must be consistent across all components. {VALIDATOR_MSG}"
             )
         if properties.batch_size != self._batch_size:
+
             raise ValueError(f"Dataset must have a consistent batch size across all components. {VALIDATOR_MSG}")
+
 
     def __del__(self):
         pgc.destroy_dataset_mutable(self._mutable_dataset)
@@ -333,7 +343,9 @@ class CConstDataset:
 
         # create from mutable dataset
         mutable_dataset = CMutableDataset(data=data, dataset_type=dataset_type)
+
         instance._const_dataset = pgc.create_dataset_const_from_mutable(mutable_dataset.get_dataset_ptr())
+
         assert_no_error()
         instance._buffer_views = mutable_dataset.get_buffer_views()
 
@@ -476,7 +488,9 @@ class CWritableDataset:
         )
         assert_no_error()
 
+
     def _get_buffer_properties(self, info: CDatasetInfo) -> Mapping[ComponentType, BufferProperties]:
+
         is_batch = info.is_batch()
         batch_size = info.batch_size()
         components = info.components()
@@ -518,7 +532,9 @@ class CWritableDataset:
         for component_type, component_buffer in self._data.items():
             if component_type in self._data_filter:
                 filter_option = self._data_filter[component_type]
+
                 if filter_option is ComponentAttributeFilterOptions.relevant and is_columnar(component_buffer):
+
                     self._filter_attributes(component_buffer)
 
     def _post_filtering(self):
@@ -535,7 +551,9 @@ def _get_filtered_attributes(
         return None
 
     if isinstance(component_data_filter, ComponentAttributeFilterOptions):
+
         if component_data_filter == ComponentAttributeFilterOptions.relevant and attribute_indication is not None:
+
             return attribute_indication
         return [] if schema.dtype.names is None else list(schema.dtype.names)
 

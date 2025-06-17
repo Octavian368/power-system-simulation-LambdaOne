@@ -110,9 +110,11 @@ def create_output_data(
     Returns:
         Dataset: output dataset
     """
+
     processed_output_types = process_data_filter(output_type, output_component_types, list(all_component_count.keys()))
 
     all_component_count = {k: v for k, v in all_component_count.items() if k in processed_output_types}
+
 
     # create result dataset
     result_dict: Dataset = {}
@@ -136,6 +138,8 @@ def create_output_data(
         ]:
             result_dict[name] = {attr: np.empty(shape, dtype=dtype[attr]) for attr in dtype.names}
         elif isinstance(requested_component, list | set):
+
             result_dict[name] = {attr: np.empty(shape, dtype=dtype[attr]) for attr in requested_component}
+
 
     return result_dict

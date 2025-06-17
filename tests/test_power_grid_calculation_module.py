@@ -74,6 +74,7 @@ def test_mismatched_timestamps():
     df1 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-01", periods=2, freq="h", name="Timestamp"))
     df2 = pd.DataFrame({100: [1, 2]}, index=pd.date_range("2024-01-02", periods=2, freq="h", name="Timestamp"))
 
+
     with pytest.raises(TimestampMismatchError):
         calc.create_batch_update(df1, df2)
 
