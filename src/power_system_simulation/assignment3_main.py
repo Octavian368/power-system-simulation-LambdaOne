@@ -53,7 +53,7 @@ def validate_lv_grid(network_data, feeder_ids, active_profile, reactive_profile,
         if fid not in line_ids:
             raise ValueError(f"Feeder ID {fid} is not a valid line ID.")
 
-    # 4. Check feeder lines connect to transformer output
+    # 4. Check feeder lines connect to transformer output 
     transformer_to_node = transformers[0]["to_node"]
     for fid in feeder_ids:
         feeder_line = next(l for l in network_data["line"] if l["id"] == fid)
